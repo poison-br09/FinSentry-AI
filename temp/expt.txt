@@ -1,0 +1,76 @@
+Yes, **Ollama** can help with **basic text extraction and classification**, but with some important caveats:
+
+---
+
+### ✅ **What Ollama *Can* Do (with right setup):**
+
+If you’re running a **local LLM** (like LLaMA, Mistral, or similar) using Ollama with proper tooling, then:
+
+1. **You can load a PDF** (using tools like `PyMuPDF`, `pdfplumber`, or `pdfminer`) to extract text.
+2. **You can prompt the LLM** to classify transactions into categories using regex or keyword matching.
+3. **With custom scripts**, you can:
+
+   * Parse structured fields (`Date`, `DR`, `CR`, etc.)
+   * Classify based on keywords.
+   * Export to `CSV`, `JSON`, or even build a report.
+
+---
+
+### ❌ **What Ollama *Can’t* Do Out-of-the-Box:**
+
+* **Doesn't support PDFs natively** — you need a Python script to extract PDF content first.
+* **No memory or advanced chaining** — unlike ChatGPT with tools or LangChain, you need to manage context, chunking, and logic manually.
+* **Model limitation** — smaller models like `llama2:7b` might struggle with:
+
+  * Long document context (token limit)
+  * Complex reasoning or fuzzy classification
+  * Producing clean structured JSON reliably
+
+---
+
+### ✅ **Recommended Setup (to match this task in Ollama):**
+
+1. Use **Python** with:
+
+   * `PyMuPDF` or `pdfplumber` for PDF parsing.
+   * `pandas` for table handling.
+   * `ollama` Python client for LLM access.
+
+2. Use a **prompt template** like:
+
+```python
+prompt = f"""
+Extract transactions from the following text and categorize them into:
+- Groceries, Fuel, Shopping, E-commerce, Food, Bills, ATM, Transfer, UPI Received, Services, Others
+
+Format:
+{{ "Date": "...", "Description": "...", "DR": "...", "CR": "...", "Balance": "...", "Category": "..." }}
+
+Text:
+{text_chunk}
+"""
+```
+
+3. Feed chunks of the bank statement text and collect outputs.
+
+---
+
+### 🧠 Summary
+
+| **Feature**             | **Ollama (local LLM)**  | **ChatGPT (Plus/Pro)** |
+| ----------------------- | ----------------------- | ---------------------- |
+| PDF Handling            | ❌ (needs external libs) | ✅ (via file upload)    |
+| Large Context Handling  | ⚠️ (limited by tokens)  | ✅ (handles full files) |
+| Classification Accuracy | ⚠️ Varies by model/size | ✅ High                 |
+| Output (CSV/JSON)       | ✅ (with scripts)        | ✅ (instant generation) |
+| Visualizations          | ❌ (manual)              | ✅ (if requested)       |
+
+---
+
+If you want, I can also give you a **ready-made Python script** to:
+
+* Parse this PDF
+* Categorize the transactions
+* Export to `transactions_with_category.csv`
+
+Would you like that?

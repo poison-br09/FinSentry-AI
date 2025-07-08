@@ -1,0 +1,619 @@
+{
+  "Account Name": "(cid:9)Mr. ABHAY KUMAR",
+  "Account Number": "Account Number not found",
+  "IFSC Code": "SBIN0018038",
+  "Transactions": [
+    {
+      "Value Date": "1 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 80.0,
+      "Credit": null,
+      "Balance": 400.0
+    },
+    {
+      "Value Date": "1 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null
+    },
+    {
+      "Value Date": "1 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 15.0,
+      "Credit": null,
+      "Balance": 265.0
+    },
+    {
+      "Value Date": "2 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 245.0
+    },
+    {
+      "Value Date": "4 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 225.0
+    },
+    {
+      "Value Date": "5 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 105.0,
+      "Credit": null,
+      "Balance": 120.0
+    },
+    {
+      "Value Date": "6 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 28.0,
+      "Credit": null,
+      "Balance": 92.0
+    },
+    {
+      "Value Date": "6 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 35.0,
+      "Credit": null,
+      "Balance": 57.0
+    },
+    {
+      "Value Date": "6 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 885.0,
+      "Credit": null,
+      "Balance": 942.0
+    },
+    {
+      "Value Date": "8 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 922.0
+    },
+    {
+      "Value Date": "9 Jan 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 518.0,
+      "Credit": null,
+      "Balance": 404.0
+    },
+    {
+      "Value Date": "4 Feb 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 500.0,
+      "Credit": null,
+      "Balance": 527.85
+    },
+    {
+      "Value Date": "5 Feb 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 100.0,
+      "Credit": null,
+      "Balance": 427.85
+    },
+    {
+      "Value Date": "6 Feb 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 50.0,
+      "Credit": null,
+      "Balance": 377.85
+    },
+    {
+      "Value Date": "7 Feb 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 250.0,
+      "Credit": null,
+      "Balance": 127.85
+    },
+    {
+      "Value Date": "9 Feb 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 500.0,
+      "Credit": null,
+      "Balance": 627.85
+    },
+    {
+      "Value Date": "1 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 80.0,
+      "Credit": null,
+      "Balance": 44.85
+    },
+    {
+      "Value Date": "1 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 37.0,
+      "Credit": null,
+      "Balance": 7.85
+    },
+    {
+      "Value Date": "3 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 987.85
+    },
+    {
+      "Value Date": "3 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 209.0,
+      "Credit": null,
+      "Balance": 778.85
+    },
+    {
+      "Value Date": "3 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 758.85
+    },
+    {
+      "Value Date": "5 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 738.85
+    },
+    {
+      "Value Date": "5 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 90.0,
+      "Credit": null,
+      "Balance": 648.85
+    },
+    {
+      "Value Date": "5 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 628.85
+    },
+    {
+      "Value Date": "6 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 608.85
+    },
+    {
+      "Value Date": "6 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null
+    },
+    {
+      "Value Date": "6 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 440.0,
+      "Credit": null,
+      "Balance": 608.85
+    },
+    {
+      "Value Date": "6 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 588.85
+    },
+    {
+      "Value Date": "7 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 568.85
+    },
+    {
+      "Value Date": "8 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 548.85
+    },
+    {
+      "Value Date": "8 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 18.0,
+      "Credit": null,
+      "Balance": 530.85
+    },
+    {
+      "Value Date": "8 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 10.0,
+      "Credit": null,
+      "Balance": 520.85
+    },
+    {
+      "Value Date": "8 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 500.85
+    },
+    {
+      "Value Date": "8 Mar 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 480.85
+    },
+    {
+      "Value Date": "3 Apr 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 2.0,
+      "Credit": null,
+      "Balance": 23.1
+    },
+    {
+      "Value Date": "3 Apr 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 3.0,
+      "Credit": null,
+      "Balance": 20.1
+    },
+    {
+      "Value Date": "3 Apr 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 500.0,
+      "Credit": null,
+      "Balance": 520.1
+    },
+    {
+      "Value Date": "2 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 30.0,
+      "Credit": null,
+      "Balance": 709.95
+    },
+    {
+      "Value Date": "2 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 379.85,
+      "Credit": null,
+      "Balance": 330.1
+    },
+    {
+      "Value Date": "3 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 15.0,
+      "Credit": null,
+      "Balance": 315.1
+    },
+    {
+      "Value Date": "5 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 0.0,
+      "Credit": null,
+      "Balance": 315.1
+    },
+    {
+      "Value Date": "5 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 15.0,
+      "Credit": null,
+      "Balance": 300.1
+    },
+    {
+      "Value Date": "5 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 347.0,
+      "Credit": null,
+      "Balance": 953.1
+    },
+    {
+      "Value Date": "5 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 983.6,
+      "Credit": null,
+      "Balance": 969.5
+    },
+    {
+      "Value Date": "5 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 761.8,
+      "Credit": null,
+      "Balance": 207.7
+    },
+    {
+      "Value Date": "5 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 175.0,
+      "Credit": null,
+      "Balance": 32.7
+    },
+    {
+      "Value Date": "5 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 150.0,
+      "Credit": null,
+      "Balance": 882.7
+    },
+    {
+      "Value Date": "5 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null
+    },
+    {
+      "Value Date": "5 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 60.0,
+      "Credit": null,
+      "Balance": 652.7
+    },
+    {
+      "Value Date": "6 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 120.0,
+      "Credit": null,
+      "Balance": 532.7
+    },
+    {
+      "Value Date": "6 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 296.02,
+      "Credit": null,
+      "Balance": 236.68
+    },
+    {
+      "Value Date": "7 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 20.0,
+      "Credit": null,
+      "Balance": 216.68
+    },
+    {
+      "Value Date": "7 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 895.0,
+      "Credit": null,
+      "Balance": 111.68
+    },
+    {
+      "Value Date": "7 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 690.0,
+      "Credit": null,
+      "Balance": 801.68
+    },
+    {
+      "Value Date": "7 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 55.0,
+      "Credit": null,
+      "Balance": 746.68
+    },
+    {
+      "Value Date": "7 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 40.0,
+      "Credit": null,
+      "Balance": 706.68
+    },
+    {
+      "Value Date": "8 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 290.0,
+      "Credit": null,
+      "Balance": 416.68
+    },
+    {
+      "Value Date": "9 May 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 195.0,
+      "Credit": null,
+      "Balance": 221.68
+    },
+    {
+      "Value Date": "1 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 700.0,
+      "Credit": null,
+      "Balance": 693.68
+    },
+    {
+      "Value Date": "1 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 160.0,
+      "Credit": null,
+      "Balance": 533.68
+    },
+    {
+      "Value Date": "2 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 10.0,
+      "Credit": null,
+      "Balance": 523.68
+    },
+    {
+      "Value Date": "2 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 51.0,
+      "Credit": null,
+      "Balance": 472.68
+    },
+    {
+      "Value Date": "2 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 10.0,
+      "Credit": null,
+      "Balance": 462.68
+    },
+    {
+      "Value Date": "3 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 600.0,
+      "Credit": null,
+      "Balance": 62.68
+    },
+    {
+      "Value Date": "3 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 574.5,
+      "Credit": null,
+      "Balance": 488.18
+    },
+    {
+      "Value Date": "3 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 10.0,
+      "Credit": null,
+      "Balance": 478.18
+    },
+    {
+      "Value Date": "4 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 10.0,
+      "Credit": null,
+      "Balance": 468.18
+    },
+    {
+      "Value Date": "4 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 10.0,
+      "Credit": null,
+      "Balance": 458.18
+    },
+    {
+      "Value Date": "4 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 96.0,
+      "Credit": null,
+      "Balance": 362.18
+    },
+    {
+      "Value Date": "7 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null
+    },
+    {
+      "Value Date": "7 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 0.0,
+      "Credit": null,
+      "Balance": 362.18
+    },
+    {
+      "Value Date": "7 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 500.0,
+      "Credit": null,
+      "Balance": 862.18
+    },
+    {
+      "Value Date": "8 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 500.0,
+      "Credit": null,
+      "Balance": 362.18
+    },
+    {
+      "Value Date": "8 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 156.0,
+      "Credit": null,
+      "Balance": 206.18
+    },
+    {
+      "Value Date": "9 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 30.0,
+      "Credit": null,
+      "Balance": 176.18
+    },
+    {
+      "Value Date": "9 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 49.0,
+      "Credit": null,
+      "Balance": 127.18
+    },
+    {
+      "Value Date": "9 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 0.0,
+      "Credit": null,
+      "Balance": 127.18
+    },
+    {
+      "Value Date": "9 Jun 2025",
+      "Description": "",
+      "Ref No./Cheque No.": null,
+      "Debit": 0.0,
+      "Credit": null,
+      "Balance": 127.18
+    }
+  ]
+}
