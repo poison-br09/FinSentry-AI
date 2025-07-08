@@ -6,7 +6,7 @@ const AccountInfo = ({ metadata }) => {
     Account_Number,
     Bank_Name,
     IFSC_Code,
-    Total_Transactions,
+    // Total_Transactions,
   } = metadata;
 
   return (
