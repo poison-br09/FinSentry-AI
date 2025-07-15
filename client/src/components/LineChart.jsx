@@ -4,6 +4,7 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  LogarithmicScale,
   PointElement,
   LineElement,
   Title,
@@ -15,6 +16,7 @@ import {
 ChartJS.register(
   CategoryScale,
   LinearScale,
+  LogarithmicScale,
   PointElement,
   LineElement,
   Title,
@@ -24,16 +26,42 @@ ChartJS.register(
 );
 
 const LineChart = ({ data, title, type = 'expenditure' }) => {
-  // Generate colors for categories
+  // Generate colors for categories - ensuring unique colors
   const colors = [
-    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
-    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF',
-    '#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56'
+    '#E57373', // Red
+    '#64B5F6', // Blue
+    '#FFD54F', // Yellow
+    '#81C784', // Green
+    '#BA68C8', // Purple
+    '#FFB74D', // Orange
+    '#4DD0E1', // Teal
+    '#A1887F', // Brown
+    '#90A4AE', // Gray
+    '#FF8A80', // Light Red
+    '#42A5F5', // Light Blue
+    '#FFF176', // Light Yellow
   ];
 
   // Extract months and categories from data
   const months = Object.keys(data[Object.keys(data)[0]] || []);
   const categories = Object.keys(data);
+
+  // Calculate data statistics for better scaling
+  const allValues = [];
+  Object.values(data).forEach(categoryData => {
+    Object.values(categoryData).forEach(value => {
+      if (value > 0) allValues.push(value);
+    });
+  });
+
+  // Determine if we should use logarithmic scale
+  const maxValue = Math.max(...allValues);
+  const minValue = Math.min(...allValues);
+  const useLogScale = maxValue > minValue * 100; // Use log scale if max is 100x greater than min
+  
+  // For transaction counts, use linear scale with better min/max to show small values
+  const isTransactionChart = type === 'transactions';
+  const finalUseLogScale = useLogScale && !isTransactionChart;
 
   const chartData = {
     labels: months,
@@ -82,6 +110,8 @@ const LineChart = ({ data, title, type = 'expenditure' }) => {
         }
       },
       tooltip: {
+        mode: 'nearest',
+        intersect: false,
         callbacks: {
           label: function(context) {
             const label = context.dataset.label || '';
@@ -116,7 +146,8 @@ const LineChart = ({ data, title, type = 'expenditure' }) => {
         }
       },
       y: {
-        beginAtZero: true,
+        type: finalUseLogScale ? 'logarithmic' : 'linear',
+        beginAtZero: !finalUseLogScale,
         grid: {
           color: '#f3f4f6'
         },
@@ -131,7 +162,11 @@ const LineChart = ({ data, title, type = 'expenditure' }) => {
               return value;
             }
           }
-        }
+        },
+        // For logarithmic scale, ensure we don't start from 0
+        // For transaction charts, set a reasonable max to show small values better
+        min: finalUseLogScale ? Math.max(0.1, minValue * 0.1) : 0,
+        max: isTransactionChart ? Math.max(maxValue * 1.2, 10) : undefined,
       }
     },
     interaction: {

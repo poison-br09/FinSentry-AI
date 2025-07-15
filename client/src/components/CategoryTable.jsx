@@ -61,8 +61,8 @@ const CategoryTable = ({ data }) => {
                       <td className="px-8 py-2 text-gray-700">{month}</td>
                       <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(amount)}</td>
                       <td className="px-4 py-2 text-right text-gray-700">{monthlyTransactionCount && monthlyTransactionCount[month] ? monthlyTransactionCount[month] : '-'}</td>
-                    </tr>
-                  ))}
+                  </tr>
+                ))}
               </React.Fragment>
             );
           })}

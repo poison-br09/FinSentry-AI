@@ -4,6 +4,7 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  LogarithmicScale,
   BarElement,
   Title,
   Tooltip,
@@ -13,13 +14,14 @@ import {
 ChartJS.register(
   CategoryScale,
   LinearScale,
+  LogarithmicScale,
   BarElement,
   Title,
   Tooltip,
   Legend
 );
 
-// Colorblind-friendly palette
+// Colorblind-friendly palette - ensuring unique colors
 const palette = [
   '#E57373', // Red
   '#64B5F6', // Blue
@@ -30,6 +32,9 @@ const palette = [
   '#4DD0E1', // Teal
   '#A1887F', // Brown
   '#90A4AE', // Gray
+  '#FF8A80', // Light Red
+  '#42A5F5', // Light Blue
+  '#FFF176', // Light Yellow
 ];
 
 // Gradient utility for Chart.js
@@ -45,6 +50,28 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
   const months = Object.keys(data[Object.keys(data)[0]] || []);
   const categories = Object.keys(data);
 
+  // Calculate data statistics for better scaling
+  const allValues = [];
+  Object.values(data).forEach(categoryData => {
+    Object.values(categoryData).forEach(value => {
+      if (value > 0) allValues.push(value);
+    });
+  });
+
+  // Determine if we should use logarithmic scale
+  const maxValue = Math.max(...allValues);
+  const minValue = Math.min(...allValues);
+  const range = maxValue - minValue;
+  const useLogScale = maxValue > minValue * 100; // Use log scale if max is 100x greater than min
+  
+  // For transaction counts, use linear scale with better min/max to show small values
+  const isTransactionChart = type === 'transactions';
+  const finalUseLogScale = useLogScale && !isTransactionChart;
+  
+  // For transaction charts, ensure small values are visible
+  const transactionMinValue = isTransactionChart ? Math.min(...allValues.filter(v => v > 0)) : 0;
+  const transactionMaxValue = isTransactionChart ? Math.max(...allValues) : 0;
+
   // Chart.js needs a ref to get context for gradients
   const chartRef = React.useRef();
 
@@ -56,7 +83,14 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
         labels: months,
         datasets: categories.map((category, index) => ({
           label: category,
-          data: months.map(month => data[category][month] || 0),
+          data: months.map(month => {
+            const value = data[category][month] || 0;
+            // For transaction charts, ensure minimum visible height for small values
+            if (isTransactionChart && value > 0 && value < 3) {
+              return Math.max(value, 0.5); // Minimum 0.5 height for small values
+            }
+            return value;
+          }),
           backgroundColor: palette[index % palette.length],
           borderColor: palette[index % palette.length],
           borderWidth: 2,
@@ -72,23 +106,30 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
     const ctx = chartRef.current.ctx;
     return {
       labels: months,
-      datasets: categories.map((category, index) => ({
-        label: category,
-        data: months.map(month => data[category][month] || 0),
-        backgroundColor: getGradient(ctx, palette[index % palette.length]),
-        borderColor: palette[index % palette.length],
-        borderWidth: 2,
-        borderRadius: 12,
-        borderSkipped: false,
-        hoverBackgroundColor: palette[index % palette.length],
-        hoverBorderColor: palette[index % palette.length],
-        barPercentage: 0.7,
-        categoryPercentage: 0.6,
-        shadowOffsetX: 2,
-        shadowOffsetY: 4,
-        shadowBlur: 8,
-        shadowColor: palette[index % palette.length] + '33',
-      })),
+              datasets: categories.map((category, index) => ({
+          label: category,
+          data: months.map(month => {
+            const value = data[category][month] || 0;
+            // For transaction charts, ensure minimum visible height for small values
+            if (isTransactionChart && value > 0 && value < 3) {
+              return Math.max(value, 0.5); // Minimum 0.5 height for small values
+            }
+            return value;
+          }),
+          backgroundColor: getGradient(ctx, palette[index % palette.length]),
+          borderColor: palette[index % palette.length],
+          borderWidth: 2,
+          borderRadius: 12,
+          borderSkipped: false,
+          hoverBackgroundColor: palette[index % palette.length],
+          hoverBorderColor: palette[index % palette.length],
+          barPercentage: 0.7,
+          categoryPercentage: 0.6,
+          shadowOffsetX: 2,
+          shadowOffsetY: 4,
+          shadowBlur: 8,
+          shadowColor: palette[index % palette.length] + '33',
+        })),
     };
   }, [data, months, categories]);
 
@@ -154,16 +195,21 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
           label: function(context) {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
+            // For transaction charts, show the actual value (not the artificially increased height)
+            const actualValue = isTransactionChart && value > 0 && value < 3 ? 
+              Math.round(value) : value;
             if (type === 'expenditure') {
               return ` ${label}: ₹${value.toLocaleString('en-IN')}`;
             } else {
-              return ` ${label}: ${value} transactions`;
+              return ` ${label}: ${actualValue} transactions`;
             }
           },
           labelTextColor: function(context) {
             return palette[context.datasetIndex % palette.length];
           },
         },
+        mode: 'nearest',
+        intersect: false,
       },
     },
     scales: {
@@ -181,7 +227,8 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
         },
       },
       y: {
-        beginAtZero: true,
+        type: finalUseLogScale ? 'logarithmic' : 'linear',
+        beginAtZero: !finalUseLogScale,
         grid: {
           color: '#F1F5F9',
           lineWidth: 1.2,
@@ -201,6 +248,13 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
             }
           },
         },
+        // For logarithmic scale, ensure we don't start from 0
+        // For transaction charts, set a reasonable max to show small values better
+        min: finalUseLogScale ? Math.max(0.1, minValue * 0.1) : 0,
+        max: isTransactionChart ? Math.max(transactionMaxValue * 1.2, 25) : undefined,
+        // For transaction charts, ensure small values have minimum height
+        suggestedMin: isTransactionChart ? 0 : undefined,
+        suggestedMax: isTransactionChart ? Math.max(transactionMaxValue * 1.5, 30) : undefined,
       },
     },
     interaction: {

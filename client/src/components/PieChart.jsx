@@ -11,11 +11,20 @@ import {
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 const PieChart = ({ data, title, type = 'expenditure' }) => {
-  // Generate colors for categories
+  // Generate colors for categories - ensuring unique colors
   const colors = [
-    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
-    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF',
-    '#4BC0C0', '#FF6384', '#36A2EB', '#FFCE56'
+    '#E57373', // Red
+    '#64B5F6', // Blue
+    '#FFD54F', // Yellow
+    '#81C784', // Green
+    '#BA68C8', // Purple
+    '#FFB74D', // Orange
+    '#4DD0E1', // Teal
+    '#A1887F', // Brown
+    '#90A4AE', // Gray
+    '#FF8A80', // Light Red
+    '#42A5F5', // Light Blue
+    '#FFF176', // Light Yellow
   ];
 
   const chartData = {
