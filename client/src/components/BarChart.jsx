@@ -61,7 +61,6 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
   // Determine if we should use logarithmic scale
   const maxValue = Math.max(...allValues);
   const minValue = Math.min(...allValues);
-  const range = maxValue - minValue;
   const useLogScale = maxValue > minValue * 100; // Use log scale if max is 100x greater than min
   
   // For transaction counts, use linear scale with better min/max to show small values
@@ -69,7 +68,6 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
   const finalUseLogScale = useLogScale && !isTransactionChart;
   
   // For transaction charts, ensure small values are visible
-  const transactionMinValue = isTransactionChart ? Math.min(...allValues.filter(v => v > 0)) : 0;
   const transactionMaxValue = isTransactionChart ? Math.max(...allValues) : 0;
 
   // Chart.js needs a ref to get context for gradients
@@ -131,7 +129,7 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
           shadowColor: palette[index % palette.length] + '33',
         })),
     };
-  }, [data, months, categories]);
+  }, [data, months, categories, isTransactionChart]);
 
   const options = {
     responsive: true,
@@ -208,8 +206,6 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
             return palette[context.datasetIndex % palette.length];
           },
         },
-        mode: 'nearest',
-        intersect: false,
       },
     },
     scales: {
