@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 
-from .routes import user, upload
+from .routes import user, upload, malicious_detection
 from .db import Base, engine
 
 Base.metadata.create_all(bind=engine)
@@ -32,3 +32,4 @@ app.add_middleware(
 # ✅ Routers
 app.include_router(user.router)
 app.include_router(upload.router)
+app.include_router(malicious_detection.router, prefix="/api/v1")

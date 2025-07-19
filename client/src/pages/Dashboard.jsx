@@ -8,6 +8,7 @@ import LineChart from "../components/LineChart";
 import StatsSummary from "../components/StatsSummary";
 import Footer from "../components/Footer";
 import Spinner from "../components/Spinner";
+import Header from "../components/Header";
 import { formatCategoryName, setSelectedCurrency, CURRENCIES } from "../utils/formatters";
 // import AlertsPanel from "../components/AlertsPanel";
 // import InsightsPanel from "../components/InsightsPanel";
@@ -22,7 +23,7 @@ const Dashboard = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
-  const [processingProgress, setProcessingProgress] = useState(0);
+
   const [showSuccess, setShowSuccess] = useState(false);
   const [selectedCurrency, setSelectedCurrencyState] = useState('');
   const [currencySearchTerm, setCurrencySearchTerm] = useState('');
@@ -31,10 +32,7 @@ const Dashboard = () => {
   const currencyDropdownRef = useRef(null);
   const pollingIntervalRef = useRef(null);
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    window.location.reload();
-  };
+
 
   // Upload handler
   const handleUpload = async () => {
@@ -54,7 +52,6 @@ const Dashboard = () => {
       setSessionId(res.data.session_id);
       // Start processing state and polling
       setIsProcessing(true);
-      setProcessingProgress(0);
       startPollingForResults(res.data.session_id);
     } catch (err) {
       setError("Upload failed: " + (err.response?.data?.detail || err.message));
@@ -70,7 +67,6 @@ const Dashboard = () => {
     
     const poll = async () => {
       attempts++;
-      setProcessingProgress(Math.min((attempts / maxAttempts) * 100, 95)); // Cap at 95% until complete
       
       try {
         const token = localStorage.getItem("token");
@@ -81,7 +77,6 @@ const Dashboard = () => {
         const first = res.data?.results?.[0]?.result;
         if (first) {
           setSessionData(first);
-          setProcessingProgress(100);
           setIsProcessing(false);
           setShowSuccess(true);
           if (pollingIntervalRef.current) {
@@ -99,7 +94,6 @@ const Dashboard = () => {
         } else {
           setError("Processing timeout. Please try again.");
           setIsProcessing(false);
-          setProcessingProgress(0);
         }
       } catch (err) {
         if (attempts < maxAttempts) {
@@ -107,7 +101,6 @@ const Dashboard = () => {
         } else {
           setError("Failed to fetch result: " + err.message);
           setIsProcessing(false);
-          setProcessingProgress(0);
         }
       }
     };
@@ -163,7 +156,6 @@ const Dashboard = () => {
     setSessionData(null);
     setError(null);
     setIsProcessing(false);
-    setProcessingProgress(0);
     setShowSuccess(false);
     // Clear any existing polling
     if (pollingIntervalRef.current) {
@@ -326,19 +318,7 @@ const Dashboard = () => {
   return (
     <>
       <div className="min-h-screen bg-white flex flex-col items-center px-2 py-6 sm:px-4 pt-20">
-        {/* Header */}
-        <header className="w-full flex fixed top-0 left-0 right-0 z-50 items-center justify-between bg-white px-6 py-2 shadow-sm mb-4">
-        {/* <header className="fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between bg-white px-6 py-2 shadow-sm"> */}
-          <div className="flex-1 flex items-center min-w-0">
-            <img src="/fpt_horizontal.png" alt="FPT Software Logo" className="max-h-12 w-auto object-contain" style={{maxWidth: '100%'}} />
-          </div>
-          <button
-            onClick={logout}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2 rounded-lg text-base transition-colors ml-4"
-          >
-            Logout
-          </button>
-        </header>
+        <Header />
         {/* Dashboard Title */}
         <div className="w-full max-w-7xl px-2 mb-8">
           <h1 className="text-4xl font-bold text-gray-900 text-center">Dashboard</h1>
@@ -371,7 +351,10 @@ const Dashboard = () => {
             {/* Currency Selection */}
             <div className="w-full mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-blue-800 text-sm font-semibold">Select Currency:</span>
+                <div className="flex items-center">
+                  <span className="text-blue-800 text-sm font-semibold">Select Currency:</span>
+                  <span className="text-red-500 text-sm ml-1">*</span>
+                </div>
                 <span className="text-blue-600 text-xs">All amounts will be displayed in this currency</span>
               </div>
               
@@ -385,7 +368,7 @@ const Dashboard = () => {
                   <span>
                     {selectedCurrency ? 
                       `${CURRENCIES.find(c => c.code === selectedCurrency)?.country} - ${CURRENCIES.find(c => c.code === selectedCurrency)?.name} (${CURRENCIES.find(c => c.code === selectedCurrency)?.symbol})` : 
-                      'Select the currency'
+                      'Select the currency (required)'
                     }
                   </span>
                   <svg className={`w-4 h-4 text-gray-400 transition-transform ${showCurrencyDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,17 +432,31 @@ const Dashboard = () => {
             {/* Processing Status */}
             {isProcessing && (
               <div className="w-full mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="inline-flex items-center justify-center mr-3">
+                    <svg
+                      className="animate-spin h-6 w-6 text-blue-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                  </div>
                   <span className="text-blue-800 font-semibold">Processing your bank statement...</span>
-                  <span className="text-blue-600 text-sm">{Math.round(processingProgress)}%</span>
                 </div>
-                <div className="w-full bg-blue-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${processingProgress}%` }}
-                  ></div>
-                </div>
-                <p className="text-blue-700 text-sm mt-2">
+                <p className="text-blue-700 text-sm text-center">
                   This may take a few minutes. Please don't close this page.
                 </p>
               </div>
@@ -469,7 +466,7 @@ const Dashboard = () => {
             <div className="w-full flex flex-col sm:flex-row gap-4 mt-2">
               <button
                 onClick={handleUpload}
-                disabled={!files.length || isUploading || isProcessing}
+                disabled={!files.length || !selectedCurrency || isUploading || isProcessing}
                 className="flex-1 bg-orange-400 hover:bg-orange-500 text-white font-bold rounded-lg py-3 text-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isUploading ? (
