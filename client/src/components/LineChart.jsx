@@ -12,6 +12,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import { formatCurrency, getSelectedCurrency } from '../utils/formatters';
 
 ChartJS.register(
   CategoryScale,
@@ -62,6 +63,7 @@ const LineChart = ({ data, title, type = 'expenditure' }) => {
   // For transaction counts, use linear scale with better min/max to show small values
   const isTransactionChart = type === 'transactions';
   const finalUseLogScale = useLogScale && !isTransactionChart;
+  const currency = getSelectedCurrency();
 
   const chartData = {
     labels: months,
@@ -118,7 +120,7 @@ const LineChart = ({ data, title, type = 'expenditure' }) => {
             const value = context.parsed.y;
             
             if (type === 'expenditure') {
-              return `${label}: ₹${value.toLocaleString('en-IN')}`;
+              return `${label}: ${formatCurrency(value, currency)}`;
             } else {
               return `${label}: ${value} transactions`;
             }
@@ -157,7 +159,7 @@ const LineChart = ({ data, title, type = 'expenditure' }) => {
           },
           callback: function(value) {
             if (type === 'expenditure') {
-              return '₹' + value.toLocaleString('en-IN');
+              return formatCurrency(value, currency);
             } else {
               return value;
             }

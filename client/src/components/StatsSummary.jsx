@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency, getSelectedCurrency, formatCategoryName } from '../utils/formatters';
 
 const StatsSummary = ({ categorizedTransactions }) => {
   if (!categorizedTransactions) return null;
@@ -28,14 +29,12 @@ const StatsSummary = ({ categorizedTransactions }) => {
       : most;
   }, { category: 'None', transactions: 0 });
 
-  const formatCurrency = (amount) => {
-    return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-  };
+  const currency = getSelectedCurrency();
 
   const stats = [
     {
       title: 'Total Expenditure',
-      value: formatCurrency(totalExpenditure),
+      value: formatCurrency(totalExpenditure, currency),
       icon: '💰',
       color: 'bg-red-50 text-red-700'
     },
@@ -53,21 +52,21 @@ const StatsSummary = ({ categorizedTransactions }) => {
     },
     {
       title: 'Top Category',
-      value: topCategory.category,
-      subtitle: formatCurrency(topCategory.amount),
+      value: formatCategoryName(topCategory.category),
+      subtitle: formatCurrency(topCategory.amount, currency),
       icon: '🏆',
       color: 'bg-purple-50 text-purple-700'
     },
     {
       title: 'Most Active',
-      value: mostActiveCategory.category,
+      value: formatCategoryName(mostActiveCategory.category),
       subtitle: `${mostActiveCategory.transactions} transactions`,
       icon: '⚡',
       color: 'bg-orange-50 text-orange-700'
     },
     {
       title: 'Avg per Transaction',
-      value: totalTransactions > 0 ? formatCurrency(totalExpenditure / totalTransactions) : '₹0.00',
+      value: totalTransactions > 0 ? formatCurrency(totalExpenditure / totalTransactions, currency) : formatCurrency(0, currency),
       icon: '📈',
       color: 'bg-indigo-50 text-indigo-700'
     }

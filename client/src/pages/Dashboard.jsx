@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import UploadStatement from "../components/UploadStatement";
 import AccountInfo from "../components/AccountInfo";
 import CategoryTable from "../components/CategoryTable";
@@ -7,6 +7,8 @@ import BarChart from "../components/BarChart";
 import LineChart from "../components/LineChart";
 import StatsSummary from "../components/StatsSummary";
 import Footer from "../components/Footer";
+import Spinner from "../components/Spinner";
+import { formatCategoryName, setSelectedCurrency, CURRENCIES } from "../utils/formatters";
 // import AlertsPanel from "../components/AlertsPanel";
 // import InsightsPanel from "../components/InsightsPanel";
 // import DebugPanel from "../components/DebugPanel";
@@ -17,9 +19,17 @@ const Dashboard = () => {
   const [files, setFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLastFetching, setIsLastFetching] = useState(false);
-  const [isResultFetching, setIsResultFetching] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState(null);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [selectedCurrency, setSelectedCurrencyState] = useState('');
+  const [currencySearchTerm, setCurrencySearchTerm] = useState('');
+  const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const currencyDropdownRef = useRef(null);
+  const pollingIntervalRef = useRef(null);
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -42,6 +52,10 @@ const Dashboard = () => {
         },
       });
       setSessionId(res.data.session_id);
+      // Start processing state and polling
+      setIsProcessing(true);
+      setProcessingProgress(0);
+      startPollingForResults(res.data.session_id);
     } catch (err) {
       setError("Upload failed: " + (err.response?.data?.detail || err.message));
     } finally {
@@ -49,10 +63,63 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch result for uploaded session
+  // Poll for results
+  const startPollingForResults = (sessionId) => {
+    let attempts = 0;
+    const maxAttempts = 60; // 5 minutes max (60 * 5 seconds)
+    
+    const poll = async () => {
+      attempts++;
+      setProcessingProgress(Math.min((attempts / maxAttempts) * 100, 95)); // Cap at 95% until complete
+      
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`/session-results/${sessionId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        const first = res.data?.results?.[0]?.result;
+        if (first) {
+          setSessionData(first);
+          setProcessingProgress(100);
+          setIsProcessing(false);
+          setShowSuccess(true);
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          // Hide success message after 5 seconds
+          setTimeout(() => setShowSuccess(false), 5000);
+          return;
+        }
+        
+        // If no result yet and we haven't exceeded max attempts, continue polling
+        if (attempts < maxAttempts) {
+          pollingIntervalRef.current = setTimeout(poll, 5000); // Poll every 5 seconds
+        } else {
+          setError("Processing timeout. Please try again.");
+          setIsProcessing(false);
+          setProcessingProgress(0);
+        }
+      } catch (err) {
+        if (attempts < maxAttempts) {
+          pollingIntervalRef.current = setTimeout(poll, 5000);
+        } else {
+          setError("Failed to fetch result: " + err.message);
+          setIsProcessing(false);
+          setProcessingProgress(0);
+        }
+      }
+    };
+    
+    // Start polling after 2 seconds
+    pollingIntervalRef.current = setTimeout(poll, 2000);
+  };
+
+  // Fetch result for uploaded session (manual fetch if needed)
   const handleFetchResult = async () => {
     if (!sessionId) return;
-    setIsResultFetching(true);
+    setIsProcessing(true);
     setError(null);
     try {
       const token = localStorage.getItem("token");
@@ -60,11 +127,16 @@ const Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       const first = res.data?.results?.[0]?.result;
-      if (first) setSessionData(first);
+      if (first) {
+        setSessionData(first);
+        setIsProcessing(false);
+      } else {
+        setError("No results available yet. Please wait for processing to complete.");
+        setIsProcessing(false);
+      }
     } catch (err) {
       setError("Failed to fetch result: " + err.message);
-    } finally {
-      setIsResultFetching(false);
+      setIsProcessing(false);
     }
   };
 
@@ -90,7 +162,91 @@ const Dashboard = () => {
     setSessionId(null);
     setSessionData(null);
     setError(null);
+    setIsProcessing(false);
+    setProcessingProgress(0);
+    setShowSuccess(false);
+    // Clear any existing polling
+    if (pollingIntervalRef.current) {
+      clearTimeout(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
   }, [files]);
+
+  // Handle currency change
+  const handleCurrencyChange = (currency) => {
+    setSelectedCurrency(currency);
+    setSelectedCurrencyState(currency);
+    setShowCurrencyDropdown(false);
+    setCurrencySearchTerm('');
+    setHighlightedIndex(-1);
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e) => {
+    if (!showCurrencyDropdown) return;
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < filteredCurrencies.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredCurrencies.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && filteredCurrencies[highlightedIndex]) {
+          handleCurrencyChange(filteredCurrencies[highlightedIndex].code);
+        }
+        break;
+      case 'Escape':
+        setShowCurrencyDropdown(false);
+        setCurrencySearchTerm('');
+        setHighlightedIndex(-1);
+        break;
+      default:
+        // Handle other keys - do nothing
+        break;
+    }
+  };
+
+  // Filter currencies based on search term and sort alphabetically by country
+  const filteredCurrencies = CURRENCIES
+    .filter(currency => 
+      currency.country.toLowerCase().includes(currencySearchTerm.toLowerCase()) ||
+      currency.name.toLowerCase().includes(currencySearchTerm.toLowerCase()) ||
+      currency.code.toLowerCase().includes(currencySearchTerm.toLowerCase())
+    )
+    .sort((a, b) => a.country.localeCompare(b.country));
+
+  // Handle click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (currencyDropdownRef.current && !currencyDropdownRef.current.contains(event.target)) {
+        setShowCurrencyDropdown(false);
+        setCurrencySearchTerm('');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Cleanup polling on component unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearTimeout(pollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Helper functions to extract data for pie charts
   const getExpenditureData = (categorizedTransactions) => {
@@ -99,7 +255,7 @@ const Dashboard = () => {
     const expenditureData = {};
     Object.entries(categorizedTransactions).forEach(([category, info]) => {
       if (info.total_amount && info.total_amount > 0) {
-        expenditureData[category] = info.total_amount;
+        expenditureData[formatCategoryName(category)] = info.total_amount;
       }
     });
     return expenditureData;
@@ -111,7 +267,7 @@ const Dashboard = () => {
     const transactionData = {};
     Object.entries(categorizedTransactions).forEach(([category, info]) => {
       if (info.total_transactions && info.total_transactions > 0) {
-        transactionData[category] = info.total_transactions;
+        transactionData[formatCategoryName(category)] = info.total_transactions;
       }
     });
     return transactionData;
@@ -124,7 +280,7 @@ const Dashboard = () => {
     const monthlyData = {};
     Object.entries(categorizedTransactions).forEach(([category, info]) => {
       if (info.monthly_breakdown && Object.keys(info.monthly_breakdown).length > 0) {
-        monthlyData[category] = info.monthly_breakdown;
+        monthlyData[formatCategoryName(category)] = info.monthly_breakdown;
       }
     });
     return monthlyData;
@@ -136,7 +292,7 @@ const Dashboard = () => {
     const monthlyData = {};
     Object.entries(categorizedTransactions).forEach(([category, info]) => {
       if (info.monthly_transaction_count && Object.keys(info.monthly_transaction_count).length > 0) {
-        monthlyData[category] = info.monthly_transaction_count;
+        monthlyData[formatCategoryName(category)] = info.monthly_transaction_count;
       }
     });
     return monthlyData;
@@ -149,7 +305,7 @@ const Dashboard = () => {
     const monthlyData = {};
     Object.entries(categorizedTransactions).forEach(([category, info]) => {
       if (info.monthly_breakdown && Object.keys(info.monthly_breakdown).length > 0) {
-        monthlyData[category] = info.monthly_breakdown;
+        monthlyData[formatCategoryName(category)] = info.monthly_breakdown;
       }
     });
     return monthlyData;
@@ -161,7 +317,7 @@ const Dashboard = () => {
     const monthlyData = {};
     Object.entries(categorizedTransactions).forEach(([category, info]) => {
       if (info.monthly_transaction_count && Object.keys(info.monthly_transaction_count).length > 0) {
-        monthlyData[category] = info.monthly_transaction_count;
+        monthlyData[formatCategoryName(category)] = info.monthly_transaction_count;
       }
     });
     return monthlyData;
@@ -186,6 +342,11 @@ const Dashboard = () => {
         {/* Dashboard Title */}
         <div className="w-full max-w-7xl px-2 mb-8">
           <h1 className="text-4xl font-bold text-gray-900 text-center">Dashboard</h1>
+          {/* <div className="flex justify-center mt-2">
+            <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+              Currency: {CURRENCIES.find(c => c.code === selectedCurrency)?.symbol} {selectedCurrency}
+            </span>
+          </div> */}
         </div>
         {/* Main Content: Upload and Analysis Preview */}
         <div className="w-full flex flex-col items-center gap-8 xl:gap-12">
@@ -193,41 +354,153 @@ const Dashboard = () => {
           <div className="w-full max-w-xl bg-white rounded-2xl shadow-md p-6 sm:p-8 flex flex-col items-center">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 w-full text-left">Upload Bank Statement</h2>
             <div className="w-full flex flex-col items-center">
-              <UploadStatement files={files} setFiles={setFiles} dropzoneDisabled={isUploading || isResultFetching || isLastFetching} />
+              <UploadStatement 
+                files={files} 
+                setFiles={setFiles} 
+                dropzoneDisabled={isUploading || isProcessing || isLastFetching}
+                isProcessing={isProcessing}
+              />
             </div>
             {error && <div className="w-full text-center text-red-600 bg-red-50 rounded-lg px-3 py-2 text-sm mb-2">{error}</div>}
-            {/* Buttons row or centered view result */}
-            {!sessionId ? (
-              <div className="w-full flex flex-col sm:flex-row gap-4 mt-2">
-                <button
-                  onClick={handleUpload}
-                  disabled={!files.length || isUploading}
-                  className="flex-1 bg-orange-400 hover:bg-orange-500 text-white font-bold rounded-lg py-3 text-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {isUploading ? <span className="flex items-center justify-center"><img src="/spinner.gif" alt="Loading" className="w-5 h-5 mr-2 inline-block" />Uploading...</span> : "Upload"}
-                </button>
-                <button
-                  onClick={handleFetchLastResult}
-                  disabled={isLastFetching}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg py-3 text-lg transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {isLastFetching && (
-                    <img src="/spinner.gif" alt="Loading" className="w-5 h-5 mr-2 inline-block" />
-                  )}
-                  View Last Result
-                </button>
+            {showSuccess && (
+              <div className="w-full text-center text-green-600 bg-green-50 rounded-lg px-3 py-2 text-sm mb-2">
+                ✅ Processing complete! Your analysis is ready below.
               </div>
-            ) : (
+            )}
+            
+            {/* Currency Selection */}
+            <div className="w-full mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-blue-800 text-sm font-semibold">Select Currency:</span>
+                <span className="text-blue-600 text-xs">All amounts will be displayed in this currency</span>
+              </div>
+              
+              {/* Searchable Currency Dropdown */}
+              <div className="relative" ref={currencyDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+                  className="w-full text-left text-sm border border-blue-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center justify-between"
+                >
+                  <span>
+                    {selectedCurrency ? 
+                      `${CURRENCIES.find(c => c.code === selectedCurrency)?.country} - ${CURRENCIES.find(c => c.code === selectedCurrency)?.name} (${CURRENCIES.find(c => c.code === selectedCurrency)?.symbol})` : 
+                      'Select the currency'
+                    }
+                  </span>
+                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${showCurrencyDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {showCurrencyDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-blue-300 rounded-lg shadow-lg max-h-60 overflow-hidden">
+                    {/* Search Input */}
+                    <div className="p-2 border-b border-gray-200">
+                      <input
+                        type="text"
+                        placeholder="Search by country, currency name, or code..."
+                        value={currencySearchTerm}
+                        onChange={(e) => {
+                          setCurrencySearchTerm(e.target.value);
+                          setHighlightedIndex(-1);
+                        }}
+                        onKeyDown={handleKeyDown}
+                        className="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        autoFocus
+                      />
+                    </div>
+                    
+                    {/* Currency List */}
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredCurrencies.length > 0 ? (
+                        filteredCurrencies.map((currency, index) => (
+                          <button
+                            key={currency.code}
+                            onClick={() => handleCurrencyChange(currency.code)}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none ${
+                              selectedCurrency === currency.code ? 'bg-blue-100 text-blue-800' : 
+                              index === highlightedIndex ? 'bg-blue-50 text-blue-800' : 'text-gray-700'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">{currency.country}</div>
+                                <div className="text-xs text-gray-500">{currency.name} ({currency.code})</div>
+                              </div>
+                              <span className="text-lg font-semibold text-blue-600">{currency.symbol}</span>
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-gray-500">
+                          No currencies found matching "{currencySearchTerm}"
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <p className="text-blue-700 text-xs mt-2">
+                Choose the currency for your bank statement.
+              </p>
+            </div>
+            {/* Processing Status */}
+            {isProcessing && (
+              <div className="w-full mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-blue-800 font-semibold">Processing your bank statement...</span>
+                  <span className="text-blue-600 text-sm">{Math.round(processingProgress)}%</span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${processingProgress}%` }}
+                  ></div>
+                </div>
+                <p className="text-blue-700 text-sm mt-2">
+                  This may take a few minutes. Please don't close this page.
+                </p>
+              </div>
+            )}
+
+            {/* Buttons row */}
+            <div className="w-full flex flex-col sm:flex-row gap-4 mt-2">
+              <button
+                onClick={handleUpload}
+                disabled={!files.length || isUploading || isProcessing}
+                className="flex-1 bg-orange-400 hover:bg-orange-500 text-white font-bold rounded-lg py-3 text-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isUploading ? (
+                  <span className="flex items-center justify-center">
+                    <Spinner size="w-5 h-5" color="text-white" />
+                    <span className="ml-2">Uploading...</span>
+                  </span>
+                ) : (
+                  "Upload & Process"
+                )}
+              </button>
+              <button
+                onClick={handleFetchLastResult}
+                disabled={isLastFetching || isProcessing}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg py-3 text-lg transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isLastFetching && (
+                  <Spinner size="w-5 h-5" color="text-white" />
+                )}
+                <span className={isLastFetching ? "ml-2" : ""}>View Last Result</span>
+              </button>
+            </div>
+
+            {/* Manual fetch button (only show if session exists but no data and not processing) */}
+            {sessionId && !sessionData && !isProcessing && (
               <div className="w-full flex justify-center mt-2">
                 <button
                   onClick={handleFetchResult}
-                  disabled={isResultFetching}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg py-3 px-8 text-lg transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg py-2 px-6 text-base transition-colors"
                 >
-                  {isResultFetching && (
-                    <img src="/spinner.gif" alt="Loading" className="w-5 h-5 mr-2 inline-block" />
-                  )}
-                  View Result
+                  Check for Results
                 </button>
               </div>
             )}

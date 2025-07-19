@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-
-const formatCurrency = (val) =>
-  typeof val === 'number' ? `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-';
+import { formatCurrency, getSelectedCurrency, formatCategoryName } from '../utils/formatters';
 
 const CategoryTable = ({ data }) => {
   const [expandedCategories, setExpandedCategories] = useState(new Set());
 
   if (!data || Object.keys(data).length === 0) return null;
+
+  const currency = getSelectedCurrency();
 
   const toggleCategory = (category) => {
     const newExpanded = new Set(expandedCategories);
@@ -24,7 +24,7 @@ const CategoryTable = ({ data }) => {
         <thead>
           <tr className="bg-gray-100 text-gray-700">
             <th className="text-left px-4 py-3 font-semibold">Account</th>
-            <th className="text-right px-4 py-3 font-semibold">Amount (₹)</th>
+            <th className="text-right px-4 py-3 font-semibold">Amount ({currency})</th>
             <th className="text-right px-4 py-3 font-semibold">Transactions</th>
           </tr>
         </thead>
@@ -49,9 +49,9 @@ const CategoryTable = ({ data }) => {
                     }>
                       ▶
                     </span>
-                    {category}
+                    {formatCategoryName(category)}
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold">{formatCurrency(info.total_amount)}</td>
+                  <td className="px-4 py-3 text-right font-semibold">{formatCurrency(info.total_amount, currency)}</td>
                   <td className="px-4 py-3 text-right font-semibold">{info.total_transactions ?? '-'}</td>
                 </tr>
                 {isExpanded && monthlyData
@@ -59,7 +59,7 @@ const CategoryTable = ({ data }) => {
                   .map(([month, amount], mIdx) => (
                     <tr key={`${category}-${month}`} className={mIdx % 2 === 0 ? 'bg-blue-50' : 'bg-blue-100'}>
                       <td className="px-8 py-2 text-gray-700">{month}</td>
-                      <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(amount)}</td>
+                      <td className="px-4 py-2 text-right text-gray-700">{formatCurrency(amount, currency)}</td>
                       <td className="px-4 py-2 text-right text-gray-700">{monthlyTransactionCount && monthlyTransactionCount[month] ? monthlyTransactionCount[month] : '-'}</td>
                   </tr>
                 ))}

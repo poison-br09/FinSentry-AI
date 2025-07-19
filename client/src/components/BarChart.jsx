@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { formatCurrency, getSelectedCurrency } from '../utils/formatters';
 
 ChartJS.register(
   CategoryScale,
@@ -69,6 +70,7 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
   
   // For transaction charts, ensure small values are visible
   const transactionMaxValue = isTransactionChart ? Math.max(...allValues) : 0;
+  const currency = getSelectedCurrency();
 
   // Chart.js needs a ref to get context for gradients
   const chartRef = React.useRef();
@@ -197,7 +199,7 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
             const actualValue = isTransactionChart && value > 0 && value < 3 ? 
               Math.round(value) : value;
             if (type === 'expenditure') {
-              return ` ${label}: ₹${value.toLocaleString('en-IN')}`;
+              return ` ${label}: ${formatCurrency(value, currency)}`;
             } else {
               return ` ${label}: ${actualValue} transactions`;
             }
@@ -238,7 +240,7 @@ const BarChart = ({ data, title, type = 'expenditure' }) => {
           color: '#22223B',
           callback: function(value) {
             if (type === 'expenditure') {
-              return '₹' + value.toLocaleString('en-IN');
+              return formatCurrency(value, currency);
             } else {
               return value;
             }

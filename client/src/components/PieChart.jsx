@@ -7,11 +7,14 @@ import {
   Legend,
   Title
 } from 'chart.js';
+import { formatCurrency, getSelectedCurrency } from '../utils/formatters';
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
 
 const PieChart = ({ data, title, type = 'expenditure' }) => {
   // Generate colors for categories - ensuring unique colors
+  const currency = getSelectedCurrency();
+  
   const colors = [
     '#E57373', // Red
     '#64B5F6', // Blue
@@ -77,7 +80,7 @@ const PieChart = ({ data, title, type = 'expenditure' }) => {
             const percentage = ((value / total) * 100).toFixed(1);
             
             if (type === 'expenditure') {
-              return `${label}: ₹${value.toLocaleString('en-IN')} (${percentage}%)`;
+              return `${label}: ${formatCurrency(value, currency)} (${percentage}%)`;
             } else {
               return `${label}: ${value} transactions (${percentage}%)`;
             }
