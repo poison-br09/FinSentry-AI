@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from ..services.bank_statement_llm import classify_bank_document_with_openai_local
 from app.models import ProcessedStatement
 from ..db import SessionLocal
+from ..config import settings
 import json
 
 
@@ -17,11 +18,11 @@ def trigger_ml_processing(file_id: str, filename: str, session_id: str, user_id:
     
     try:
         # Use local file path instead of downloading from URL
-        print(f"📊 Calling OpenAI API for {filename}...")
+        print(f"📊 Calling {settings.LLM_PROVIDER.upper()} API for {filename}...")
         result = classify_bank_document_with_openai_local(file_path, filename)
         result_json = json.dumps(result)
         
-        print(f"✅ OpenAI processing completed for {filename}")
+        print(f"✅ {settings.LLM_PROVIDER.upper()} processing completed for {filename}")
         print(f"   Result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
 
         db: Session = SessionLocal()

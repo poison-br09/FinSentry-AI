@@ -149,7 +149,7 @@ const MaliciousDetection = () => {
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Paste the suspicious message here to check if it's malicious, a scam, or phishing attempt..."
+                    placeholder="Paste any message here to analyze for malicious content, scams, phishing, or other threats..."
                     className="w-full h-64 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     disabled={isAnalyzing}
                   />
@@ -255,7 +255,7 @@ const MaliciousDetection = () => {
                     </svg>
                   </div>
                   <p className="text-gray-500 mb-6">
-                    Enter a message and click "Analyze Message" to check for malicious content
+                    Enter any message and click "Analyze Message" to check for malicious content, scams, or threats
                   </p>
                   
                   {/* Help Section */}

@@ -1,10 +1,7 @@
-import openai
 import json
 from typing import Dict, Any
 from ..config import settings
-
-# Configure your OpenAI API key
-client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+from .llm_client import llm_client
 
 MALICIOUS_DETECTION_PROMPT = """
 You are a cybersecurity expert AI designed to detect malicious messages, scams, phishing attempts, and fraudulent communications.
@@ -70,20 +67,18 @@ Detection Criteria:
 Analyze the message thoroughly and provide specific evidence for your classification.
 """
 
-def detect_malicious_message(message: str, model: str = "gpt-4o") -> Dict[str, Any]:
+def detect_malicious_message(message: str) -> Dict[str, Any]:
     """
     Analyzes a message to detect if it's malicious or a scam.
     
     Args:
         message (str): The message to analyze
-        model (str): The OpenAI model to use
         
     Returns:
         Dict[str, Any]: Analysis results with threat detection
     """
     try:
-        response = client.chat.completions.create(
-            model=model,
+        response = llm_client.chat_completion(
             messages=[
                 {"role": "system", "content": MALICIOUS_DETECTION_PROMPT},
                 {
@@ -139,9 +134,9 @@ def detect_malicious_message(message: str, model: str = "gpt-4o") -> Dict[str, A
         error_message = str(e)
         
         if "authentication" in error_message.lower() or "api_key" in error_message.lower():
-            alert_msg = "OpenAI API authentication failed. Please check API key configuration."
+            alert_msg = f"{settings.LLM_PROVIDER.upper()} API authentication failed. Please check API key configuration."
         elif "rate" in error_message.lower() or "quota" in error_message.lower():
-            alert_msg = "OpenAI API rate limit exceeded. Please try again later."
+            alert_msg = f"{settings.LLM_PROVIDER.upper()} API rate limit exceeded. Please try again later."
         elif "network" in error_message.lower() or "connection" in error_message.lower():
             alert_msg = "Network connection error. Please check your internet connection."
         else:

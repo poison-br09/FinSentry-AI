@@ -1,10 +1,8 @@
 #todo Account number consistency checks across multiple uploaded files are deferred for now
 
-import openai, requests, json, base64, mimetypes
+import requests, json, base64, mimetypes
 from ..config import settings
-
-# Configure your OpenAI API key
-openai.api_key = settings.OPENAI_API_KEY 
+from .llm_client import llm_client 
 
 
 SYSTEM_PROMPT = """
@@ -136,17 +134,15 @@ def download_file_from_url(url: str) -> tuple[str, bytes]:
     )
     return filename, response.content
 
-def classify_bank_document_with_openai(file_url: str, model="gpt-4o") -> dict:
-    """Processes a bank document using OpenAI API."""
+def classify_bank_document_with_openai(file_url: str) -> dict:
+    """Processes a bank document using universal LLM API."""
     filename, file_bytes = download_file_from_url(file_url)
 
-    # Upload file to OpenAI
-    file_upload = openai.files.create(file=(filename, file_bytes), purpose="assistants")
-    file_id = file_upload.id
+    # Upload file using universal client
+    file_id = llm_client.file_upload(file=(filename, file_bytes), purpose="assistants")
 
-    # Call OpenAI with file reference
-    response = openai.ChatCompletion.create(
-        model=model,
+    # Call LLM with file reference
+    response = llm_client.chat_completion(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {
@@ -160,19 +156,16 @@ def classify_bank_document_with_openai(file_url: str, model="gpt-4o") -> dict:
     )
     print(f"[DEBUG] Sending base64 payload: {filename}, {len(file_bytes)} bytes")
 
-
     content = response.choices[0].message.content
     try:
         return json.loads(content)
     except json.JSONDecodeError:
         raise ValueError("The model did not return a valid JSON. Raw output:\n" + content)
 
-def classify_bank_document_with_openai_local(file_path: str, filename: str, model="gpt-4o") -> dict:
-    """Processes a local bank document using OpenAI API - supports all file types."""
+def classify_bank_document_with_openai_local(file_path: str, filename: str) -> dict:
+    """Processes a local bank document using universal LLM API - supports all file types."""
     with open(file_path, "rb") as f:
         file_bytes = f.read()
-
-    client = openai.OpenAI(api_key=openai.api_key)
 
     file_extension = filename.lower()[filename.rfind('.'):] if '.' in filename else ''
     image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.tif'}
@@ -181,22 +174,22 @@ def classify_bank_document_with_openai_local(file_path: str, filename: str, mode
 
     try:
         if file_extension in image_extensions:
-            return _process_image_file(client, file_path, filename, file_bytes, file_extension)
+            return _process_image_file(file_path, filename, file_bytes, file_extension)
         elif file_extension in {'.txt', '.csv'}:
-            return _process_text_file(client, file_path, filename, file_extension)
+            return _process_text_file(file_path, filename, file_extension)
         elif file_extension in {'.xlsx', '.xls'}:
-            return _process_excel_file(client, file_path, filename, file_bytes)
+            return _process_excel_file(file_path, filename, file_bytes)
         elif file_extension == '.pdf':
-            return _process_pdf_file(client, file_path, filename, file_bytes)
+            return _process_pdf_file(file_path, filename, file_bytes)
         else:
             # Try as text file for unknown extensions
-            return _process_text_file(client, file_path, filename, file_extension)
+            return _process_text_file(file_path, filename, file_extension)
     except Exception as e:
         print(f"[DEBUG] Processing failed for {filename}: {str(e)}")
         raise e
 
-def _process_image_file(client, file_path, filename, file_bytes, file_extension):
-    """Process image files using GPT-4o Vision API."""
+def _process_image_file(file_path, filename, file_bytes, file_extension):
+    """Process image files using universal LLM Vision API."""
     # Use default MIME if guessing fails
     mime_type = mimetypes.guess_type(filename)[0] or "image/png"
 
@@ -212,8 +205,7 @@ def _process_image_file(client, file_path, filename, file_bytes, file_extension)
         raise ValueError("Image is too large to process. Please compress or resize the image.")
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        response = llm_client.vision_completion(
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
@@ -235,22 +227,20 @@ def _process_image_file(client, file_path, filename, file_bytes, file_extension)
         print(f"[DEBUG] Vision API image processing failed: {str(e)}")
         raise ValueError("Vision model failed to process the image. Ensure it's a valid, clear image (PNG, JPEG, etc.) under 20MB.")
 
-def _process_pdf_file(client, file_path, filename, file_bytes):
-    """Process PDF files using file upload API."""
+def _process_pdf_file(file_path, filename, file_bytes):
+    """Process PDF files using universal LLM file upload API."""
     try:
         print(f"[DEBUG] Attempting to process PDF using file upload API: {filename}")
-        file_upload = client.files.create(file=(filename, file_bytes), purpose="assistants")
-        file_id = file_upload.id
+        file_id = llm_client.file_upload(file_path, purpose="assistants")
 
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        response = llm_client.chat_completion(
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
                     "content": [
                         {"type": "text", "text": "Analyze the attached bank statement PDF and extract the required information."},
-                        {"type": "file", "file": {"file_id": file_id}}
+                        {"type": "file", "file_id": file_id}
                     ]
                 }
             ]
@@ -264,10 +254,9 @@ def _process_pdf_file(client, file_path, filename, file_bytes):
         # If file upload fails, just raise the original error
         raise ValueError(f"PDF processing failed: {str(e)}. Please try uploading a different file format or ensure the PDF contains readable text.")
 
-def _process_text_content(client, text_content, filename):
+def _process_text_content(text_content, filename):
     """Process text content extracted from files."""
-    response = client.chat.completions.create(
-        model="gpt-4o",
+    response = llm_client.chat_completion(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {
@@ -279,7 +268,7 @@ def _process_text_content(client, text_content, filename):
 
     return _parse_response(response.choices[0].message.content)
 
-def _process_text_file(client, file_path, filename, file_extension):
+def _process_text_file(file_path, filename, file_extension):
     """Process text-based files (CSV, TXT)."""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -288,8 +277,7 @@ def _process_text_file(client, file_path, filename, file_extension):
         with open(file_path, 'rb') as f:
             file_content = f.read().decode('latin-1', errors='ignore')
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
+    response = llm_client.chat_completion(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Analyze the following bank statement data and extract the required information:\n\n{file_content}"}
@@ -298,21 +286,19 @@ def _process_text_file(client, file_path, filename, file_extension):
 
     return _parse_response(response.choices[0].message.content)
 
-def _process_excel_file(client, file_path, filename, file_bytes):
+def _process_excel_file(file_path, filename, file_bytes):
     """Process Excel files."""
     try:
-        file_upload = client.files.create(file=(filename, file_bytes), purpose="assistants")
-        file_id = file_upload.id
+        file_id = llm_client.file_upload(file_path, purpose="assistants")
 
-        response = client.chat.completions.create(
-            model="gpt-4o",
+        response = llm_client.chat_completion(
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
                     "content": [
                         {"type": "text", "text": "Analyze the attached bank statement and extract the required information."},
-                        {"type": "file", "file": {"file_id": file_id}}
+                        {"type": "file", "file_id": file_id}
                     ]
                 }
             ]
@@ -322,7 +308,7 @@ def _process_excel_file(client, file_path, filename, file_bytes):
     except Exception as e:
         print(f"[DEBUG] Excel processing failed: {str(e)}")
         # Fallback to text extraction if file upload fails
-        return _process_text_file(client, file_path, filename, '.txt')
+        return _process_text_file(file_path, filename, '.txt')
 
 def _parse_response(content):
     """Parse and clean the response content."""

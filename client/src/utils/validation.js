@@ -11,18 +11,10 @@ export const validateMessage = (message) => {
     errors.push("Message is too long (maximum 10,000 characters)");
   }
 
-  // Check for suspicious patterns
-  const suspiciousPatterns = [
-    /\b(?:password|ssn|credit.?card|bank.?account)\b/i,
-    /\b\d{3}-\d{2}-\d{4}\b/, // SSN pattern
-    /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/, // Credit card pattern
-    /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/, // Email pattern
-  ];
-
-  const hasSuspiciousContent = suspiciousPatterns.some(pattern => pattern.test(message));
-  if (hasSuspiciousContent) {
-    errors.push("Message contains sensitive information patterns");
-  }
+  // Note: We removed suspicious pattern validation because:
+  // 1. The system should analyze ANY message - that's the whole point
+  // 2. The AI will determine if content is malicious, not pre-validation
+  // 3. Users should be able to analyze messages containing any words
 
   return {
     isValid: errors.length === 0,
