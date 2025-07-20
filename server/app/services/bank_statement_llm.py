@@ -1,9 +1,10 @@
 #todo Account number consistency checks across multiple uploaded files are deferred for now
 
 import openai, requests, json, base64, mimetypes
+from ..config import settings
 
 # Configure your OpenAI API key
-openai.api_key = "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" 
+openai.api_key = settings.OPENAI_API_KEY 
 
 
 SYSTEM_PROMPT = """
@@ -36,6 +37,19 @@ Do not include explanations, markdown, or extra formatting. If input includes mu
      - total_transactions: number of transactions
      - monthly_breakdown: month-wise amount spent
      - monthly_transaction_count: month-wise number of transactions
+     - monthly_transactions: detailed transaction list for each month with the following structure:
+       {
+         "Month Year": [
+           {
+             "date": "DD MMM YYYY",
+             "description": "Transaction description",
+             "amount": float,
+             "type": "DR" or "CR",
+             "balance": float,
+             "ref_no": "Reference number if available"
+           }
+         ]
+       }
 
 3. Financial alerts and insights:
    - Detect anomalies such as:
@@ -59,6 +73,8 @@ Do not include explanations, markdown, or extra formatting. If input includes mu
 ⚠️ IMPORTANT:
 - Do NOT skip any transaction — all must be categorized.
 - Output must be valid JSON only.
+- Do NOT use commas in numbers (e.g., use 3700.00 instead of 3,700.00).
+- Do NOT include any comments, explanations, or markdown formatting in the JSON.
 - Ensure monthly totals align with transaction count and amounts.
 - This is for legitimate financial analysis and budgeting purposes.
 - For single files, extract ALL available data regardless of page count or sections.
@@ -82,6 +98,19 @@ Use the following JSON structure:
       "monthly_transaction_count": {
         "Month Year": int,
         ...
+      },
+      "monthly_transactions": {
+        "Month Year": [
+          {
+            "date": "DD MMM YYYY",
+            "description": "Transaction description",
+            "amount": float,
+            "type": "DR" or "CR",
+            "balance": float,
+            "ref_no": "Reference number if available"
+          }
+        ],
+        ...
       }
     },
     ...
@@ -96,7 +125,7 @@ Use the following JSON structure:
 
 def download_file_from_url(url: str) -> tuple[str, bytes]:
     """Downloads file from a URL and returns filename and content bytes."""
-    response = requests.get(url)
+    response = requests.get(url, timeout=30)  # 30 second timeout
     if response.status_code != 200:
         raise Exception(f"Failed to download file: {response.status_code}")
     content_disposition = response.headers.get("content-disposition", "")
@@ -232,25 +261,8 @@ def _process_pdf_file(client, file_path, filename, file_bytes):
         print(f"[DEBUG] PDF file upload processing failed: {str(e)}")
         print(f"[DEBUG] Attempting fallback to text extraction for PDF: {filename}")
         
-        # Fallback: Try to extract text from PDF and process as text
-        try:
-            import PyPDF2
-            with open(file_path, 'rb') as file:
-                pdf_reader = PyPDF2.PdfReader(file)
-                text_content = ""
-                for page in pdf_reader.pages:
-                    text_content += page.extract_text() + "\n"
-                
-            if text_content.strip():
-                print(f"[DEBUG] Successfully extracted text from PDF, processing as text")
-                return _process_text_content(client, text_content, filename)
-            else:
-                raise ValueError("Could not extract readable text from the PDF. Please ensure the PDF contains text (not just images) or try uploading a different format.")
-        except ImportError:
-            raise ValueError("PDF processing failed and PyPDF2 is not available for text extraction. Please install PyPDF2 or try uploading a different format.")
-        except Exception as pdf_error:
-            print(f"[DEBUG] PDF text extraction also failed: {str(pdf_error)}")
-            raise ValueError(f"PDF processing failed: {str(e)}. Please try uploading a different file format or ensure the PDF contains readable text.")
+        # If file upload fails, just raise the original error
+        raise ValueError(f"PDF processing failed: {str(e)}. Please try uploading a different file format or ensure the PDF contains readable text.")
 
 def _process_text_content(client, text_content, filename):
     """Process text content extracted from files."""
@@ -332,6 +344,22 @@ def _parse_response(content):
     except json.JSONDecodeError as e:
         print(f"[DEBUG] JSON parsing error: {e}")
         print(f"[DEBUG] Full content: {content}")
+        
+        # Try to fix common JSON issues
+        try:
+            # Fix numbers with commas (e.g., 3,700.00 -> 3700.00)
+            import re
+            # Pattern to match numbers with commas in JSON values
+            # This regex looks for: "amount": 3,700.00 or "amount": 1,574.50
+            content = re.sub(r':\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)', lambda m: ': ' + m.group(1).replace(',', ''), content)
+            
+            # Remove JavaScript-style comments (// ...)
+            content = re.sub(r'\s*//.*$', '', content, flags=re.MULTILINE)
+            
+            # Try parsing again
+            return json.loads(content)
+        except (json.JSONDecodeError, Exception) as fix_error:
+            print(f"[DEBUG] JSON fix attempt failed: {fix_error}")
         
         # Check if it's a content policy rejection or processing issue
         content_lower = content.lower()

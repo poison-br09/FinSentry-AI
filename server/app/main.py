@@ -5,10 +5,14 @@ import logging
 
 from .routes import user, upload, malicious_detection
 from .db import Base, engine
+from .config import settings
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+# Validate settings on startup
+settings.validate()
 
 # ✅ Logging middleware for request debugging
 class LoggingMiddleware(BaseHTTPMiddleware):
@@ -23,7 +27,7 @@ app.add_middleware(LoggingMiddleware)
 # ✅ CORS setup for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

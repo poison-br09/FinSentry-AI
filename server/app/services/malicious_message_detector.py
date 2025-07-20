@@ -1,9 +1,10 @@
 import openai
 import json
 from typing import Dict, Any
+from ..config import settings
 
 # Configure your OpenAI API key
-client = openai.OpenAI(api_key="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")
+client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
 
 MALICIOUS_DETECTION_PROMPT = """
 You are a cybersecurity expert AI designed to detect malicious messages, scams, phishing attempts, and fraudulent communications.
