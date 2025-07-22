@@ -204,14 +204,41 @@ def _process_image_file(file_path, filename, file_bytes, file_extension):
     if len(base64_url) > 20_000_000:
         raise ValueError("Image is too large to process. Please compress or resize the image.")
 
+    # Enhanced system prompt for vision tasks
+    vision_system_prompt = SYSTEM_PROMPT + """
+
+VISION-SPECIFIC INSTRUCTIONS:
+- You are analyzing a BANK STATEMENT IMAGE. Look carefully at the text, numbers, and layout.
+- Extract ALL visible transaction details, account information, and financial data from the image.
+- If the image is blurry or unclear, extract whatever information you can see.
+- If you cannot read the image at all, respond with a JSON structure containing only error information.
+- Focus on identifying: account numbers, transaction dates, amounts, descriptions, and balances.
+- Pay attention to table structures, lists, and any organized financial data.
+- Do not skip any visible transaction or financial information.
+
+IMPORTANT: If you cannot process this image, return this exact JSON structure:
+{
+  "error": "Unable to process image",
+  "suggestion": "Please upload a clearer image or try a different file format (PDF, CSV, Excel)",
+  "Account_Name": "",
+  "Account_Number": "",
+  "Bank_Name": "",
+  "IFSC_Code": "",
+  "Total_Transactions": 0,
+  "categorized_transactions": {},
+  "alerts": [],
+  "insights": {"recommendations": []}
+}
+"""
+
     try:
         response = llm_client.vision_completion(
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": vision_system_prompt},
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Analyze this bank statement image and extract the required information in JSON format."},
+                        {"type": "text", "text": "Carefully analyze this bank statement image. Extract ALL visible financial data including account details, transactions, amounts, dates, and descriptions. Return ONLY valid JSON in the specified format."},
                         {
                             "type": "image_url",
                             "image_url": {"url": base64_url}
@@ -225,7 +252,28 @@ def _process_image_file(file_path, filename, file_bytes, file_extension):
 
     except Exception as e:
         print(f"[DEBUG] Vision API image processing failed: {str(e)}")
-        raise ValueError("Vision model failed to process the image. Ensure it's a valid, clear image (PNG, JPEG, etc.) under 20MB.")
+        
+        # Provide more specific error messages based on the error type
+        error_str = str(e).lower()
+        
+        if "rate limit" in error_str or "quota" in error_str:
+            raise ValueError("API rate limit exceeded. Please try again later.")
+        elif "authentication" in error_str or "unauthorized" in error_str:
+            raise ValueError("API authentication failed. Please check your API key configuration.")
+        elif "timeout" in error_str:
+            raise ValueError("Request timed out. The image might be too large or complex. Please try a smaller or clearer image.")
+        elif "invalid" in error_str and "image" in error_str:
+            raise ValueError("Invalid image format. Please upload a valid PNG, JPEG, or JPG image.")
+        else:
+            raise ValueError("Vision model failed to process the image. This could be due to:\n"
+                           "1. Image quality is too low or blurry\n"
+                           "2. Image doesn't contain readable text\n"
+                           "3. Image format is not supported\n"
+                           "4. Image is too large\n\n"
+                           "Please try:\n"
+                           "- Uploading a clearer, higher resolution image\n"
+                           "- Converting to PDF format\n"
+                           "- Using a different file format (CSV, Excel)")
 
 def _process_pdf_file(file_path, filename, file_bytes):
     """Process PDF files using universal LLM file upload API."""
@@ -240,7 +288,7 @@ def _process_pdf_file(file_path, filename, file_bytes):
                     "role": "user",
                     "content": [
                         {"type": "text", "text": "Analyze the attached bank statement PDF and extract the required information."},
-                        {"type": "file", "file_id": file_id}
+                        {"type": "file", "file": {"file_id": file_id}}
                     ]
                 }
             ]
@@ -298,7 +346,7 @@ def _process_excel_file(file_path, filename, file_bytes):
                     "role": "user",
                     "content": [
                         {"type": "text", "text": "Analyze the attached bank statement and extract the required information."},
-                        {"type": "file", "file_id": file_id}
+                        {"type": "file", "file": {"file_id": file_id}}
                     ]
                 }
             ]

@@ -52,28 +52,41 @@ class LLMClient:
         """Validate if the current model supports the requested feature"""
         model = self.model.lower()
         
+        print(f"[DEBUG] Validating model compatibility - Model: {model}, Feature: {feature}")
+        
         # Vision support
         if feature == "vision":
             if self.provider == "openai":
-                return any(vision_model in model for vision_model in ["gpt-4o", "gpt-4-vision"])
+                vision_supported = any(vision_model in model for vision_model in ["gpt-4o", "gpt-4-vision"])
+                print(f"[DEBUG] OpenAI vision support: {vision_supported}")
+                return vision_supported
             elif self.provider == "krutrim":
-                return "vision" in model or "pro" in model
+                vision_supported = "vision" in model or "pro" in model
+                print(f"[DEBUG] Krutrim vision support: {vision_supported}")
+                return vision_supported
             elif self.provider == "anthropic":
-                return "opus" in model or "sonnet" in model
+                vision_supported = "opus" in model or "sonnet" in model
+                print(f"[DEBUG] Anthropic vision support: {vision_supported}")
+                return vision_supported
             else:
+                print(f"[DEBUG] Unknown provider for vision: {self.provider}")
                 return False
         
         # File upload support
         elif feature == "file_upload":
             if self.provider in ["openai", "krutrim"]:
+                print(f"[DEBUG] File upload supported for {self.provider}")
                 return True
             else:
+                print(f"[DEBUG] File upload not supported for {self.provider}")
                 return False
         
         # Chat support (all models support this)
         elif feature == "chat":
+            print(f"[DEBUG] Chat supported for all models")
             return True
         
+        print(f"[DEBUG] Unknown feature: {feature}")
         return False
     
     def get_recommended_model(self, provider: str, feature: str = "chat") -> str:
@@ -138,12 +151,19 @@ class LLMClient:
     ) -> Dict[str, Any]:
         """OpenAI-compatible chat completion"""
         try:
+            print(f"[DEBUG] LLM Client - Provider: {self.provider}, Model: {self.model}")
+            print(f"[DEBUG] LLM Client - API Key: {self.api_key[:20]}..." if self.api_key else "[DEBUG] LLM Client - No API Key!")
+            print(f"[DEBUG] LLM Client - Base URL: {self.base_url}")
+            
             # Use the new OpenAI API syntax with timeout
             client = openai.OpenAI(
                 api_key=self.api_key, 
                 base_url=self.base_url,
                 timeout=self.config.get("timeout", 120)
             )
+            
+            print(f"[DEBUG] Sending request to OpenAI with model: {self.model}")
+            print(f"[DEBUG] Messages: {messages}")
             response = client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -151,6 +171,7 @@ class LLMClient:
                 temperature=temperature or self.config["temperature"],
                 **kwargs
             )
+            print(f"[DEBUG] OpenAI response received successfully")
             return response
         except Exception as e:
             error_str = str(e).lower()
@@ -229,6 +250,22 @@ class LLMClient:
             )
         
         try:
+            print(f"[DEBUG] Vision completion - Provider: {self.provider}, Model: {self.model}")
+            print(f"[DEBUG] Vision messages structure: {len(messages)} messages")
+            
+            # Log message content without the large base64 image
+            for i, msg in enumerate(messages):
+                if msg.get("role") == "user" and isinstance(msg.get("content"), list):
+                    content_summary = []
+                    for item in msg["content"]:
+                        if item.get("type") == "text":
+                            content_summary.append(f"text: {item['text'][:100]}...")
+                        elif item.get("type") == "image_url":
+                            content_summary.append("image_url: [base64 data]")
+                    print(f"[DEBUG] Message {i} content: {content_summary}")
+                else:
+                    print(f"[DEBUG] Message {i}: {msg.get('role', 'unknown')} - {str(msg.get('content', ''))[:100]}...")
+            
             # Use the new OpenAI API syntax with timeout
             client = openai.OpenAI(
                 api_key=self.api_key, 
@@ -242,6 +279,9 @@ class LLMClient:
                 temperature=temperature or self.config["temperature"],
                 **kwargs
             )
+            print(f"[DEBUG] Vision response received successfully")
+            print(f"[DEBUG] Response content length: {len(response.choices[0].message.content)}")
+            print(f"[DEBUG] Response content preview: {response.choices[0].message.content[:200]}...")
             return response
         except Exception as e:
             logger.error(f"Vision API error: {str(e)}")
@@ -260,6 +300,7 @@ class LLMClient:
             )
         
         try:
+            print(f"[DEBUG] Uploading file: {file_path}")
             # Use the new OpenAI API syntax with timeout
             client = openai.OpenAI(
                 api_key=self.api_key, 
@@ -269,8 +310,9 @@ class LLMClient:
             with open(file_path, 'rb') as file:
                 response = client.files.create(
                     file=file,
-                    purpose=purpose
+                    purpose="assistants"
                 )
+            print(f"[DEBUG] File uploaded successfully, ID: {response.id}")
             return response.id
         except Exception as e:
             logger.error(f"File upload error: {str(e)}")
