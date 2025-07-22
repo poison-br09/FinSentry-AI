@@ -34,7 +34,7 @@ async def upload_statements(
     user=Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    print(f"[DEBUG] Received {len(files)} files from user {user.email}")
+    # print(f"[DEBUG] Received {len(files)} files from user {user.email}")
     session_id = uuid4()
     stored_files = []
 
@@ -91,8 +91,8 @@ def get_file(file_id: str, db: Session = Depends(get_db)):
 # ✅ Check processing status
 @router.get("/status/{session_id}")
 def get_processing_status(session_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    print(f"[DEBUG] Status check requested for session: {session_id}")
-    print(f"[DEBUG] User: {user.email}")
+    # print(f"[DEBUG] Status check requested for session: {session_id}")
+    # print(f"[DEBUG] User: {user.email}")
     
     # Get all files for this session
     files = db.query(UploadedFile).filter(
@@ -106,19 +106,19 @@ def get_processing_status(session_id: str, db: Session = Depends(get_db), user=D
         ProcessedStatement.user_id == user.id
     ).all()
     
-    print(f"[DEBUG] Status check - Files: {len(files)}, Processed: {len(processed)}")
-    for file in files:
-        print(f"[DEBUG] File: {file.filename}, ID: {file.id}")
-    for p in processed:
-        print(f"[DEBUG] Processed file_id: {p.file_id}, session_id: {p.session_id}")
+    # print(f"[DEBUG] Status check - Files: {len(files)}, Processed: {len(processed)}")
+    # for file in files:
+    #     print(f"[DEBUG] File: {file.filename}, ID: {file.id}")
+    # for p in processed:
+    #     print(f"[DEBUG] Processed file_id: {p.file_id}, session_id: {p.session_id}")
     
     # Also check all processed statements for this user to see if there are any
     all_processed = db.query(ProcessedStatement).filter(
         ProcessedStatement.user_id == user.id
     ).all()
-    print(f"[DEBUG] All processed statements for user: {len(all_processed)}")
-    for p in all_processed:
-        print(f"[DEBUG] All processed - file_id: {p.file_id}, session_id: {p.session_id}")
+    # print(f"[DEBUG] All processed statements for user: {len(all_processed)}")
+    # for p in all_processed:
+    #     print(f"[DEBUG] All processed - file_id: {p.file_id}, session_id: {p.session_id}")
     
     file_status = []
     for file in files:
@@ -126,8 +126,8 @@ def get_processing_status(session_id: str, db: Session = Depends(get_db), user=D
         file_id_str = str(file.id)
         processed_file = next((p for p in processed if str(p.file_id) == file_id_str), None)
         
-        print(f"[DEBUG] Checking file {file.filename} (ID: {file_id_str})")
-        print(f"[DEBUG] Found processed file: {processed_file is not None}")
+        # print(f"[DEBUG] Checking file {file.filename} (ID: {file_id_str})")
+        # print(f"[DEBUG] Found processed file: {processed_file is not None}")
         
         file_status.append({
             "filename": file.filename,
@@ -142,7 +142,7 @@ def get_processing_status(session_id: str, db: Session = Depends(get_db), user=D
         "files": file_status
     }
     
-    print(f"[DEBUG] Returning status response: {response_data}")
+    # print(f"[DEBUG] Returning status response: {response_data}")
     return response_data
 
 # ✅ Get latest processed results for dashboard
@@ -177,8 +177,8 @@ def get_latest_results(db: Session = Depends(get_db), user=Depends(get_current_u
 @router.get("/session-results/{session_id}")
 def get_session_results(session_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Get processed results for a specific session."""
-    print(f"[DEBUG] Session results requested for session: {session_id}")
-    print(f"[DEBUG] User: {user.email}")
+    # print(f"[DEBUG] Session results requested for session: {session_id}")
+    # print(f"[DEBUG] User: {user.email}")
     
     # Get all processed statements for this session
     processed_statements = db.query(ProcessedStatement).filter(
@@ -186,10 +186,10 @@ def get_session_results(session_id: str, db: Session = Depends(get_db), user=Dep
         ProcessedStatement.user_id == user.id
     ).all()
     
-    print(f"[DEBUG] Found {len(processed_statements)} processed statements for session {session_id}")
+    # print(f"[DEBUG] Found {len(processed_statements)} processed statements for session {session_id}")
     
     if not processed_statements:
-        print(f"[DEBUG] No processed results found for session {session_id}")
+        # print(f"[DEBUG] No processed results found for session {session_id}")
         return {"message": "No processed results found for this session"}
     
     results = []
@@ -199,13 +199,13 @@ def get_session_results(session_id: str, db: Session = Depends(get_db), user=Dep
             UploadedFile.id == processed.file_id
         ).first()
         
-        print(f"[DEBUG] Processing result for file_id: {processed.file_id}")
-        print(f"[DEBUG] File info: {file_info.filename if file_info else 'Unknown'}")
+        # print(f"[DEBUG] Processing result for file_id: {processed.file_id}")
+        # print(f"[DEBUG] File info: {file_info.filename if file_info else 'Unknown'}")
         
         try:
             result_data = json.loads(processed.result_json)
-            print(f"[DEBUG] Successfully parsed result data for {file_info.filename if file_info else 'Unknown'}")
-            print(f"[DEBUG] Result keys: {list(result_data.keys()) if isinstance(result_data, dict) else 'Not a dict'}")
+            # print(f"[DEBUG] Successfully parsed result data for {file_info.filename if file_info else 'Unknown'}")
+            # print(f"[DEBUG] Result keys: {list(result_data.keys()) if isinstance(result_data, dict) else 'Not a dict'}")
             
             results.append({
                 "filename": file_info.filename if file_info else "Unknown",
@@ -213,7 +213,7 @@ def get_session_results(session_id: str, db: Session = Depends(get_db), user=Dep
                 "result": result_data
             })
         except json.JSONDecodeError as e:
-            print(f"[DEBUG] JSON decode error for file {file_info.filename if file_info else 'Unknown'}: {e}")
+            # print(f"[DEBUG] JSON decode error for file {file_info.filename if file_info else 'Unknown'}: {e}")
             results.append({
                 "filename": file_info.filename if file_info else "Unknown",
                 "error": "Failed to parse result data"
@@ -224,5 +224,5 @@ def get_session_results(session_id: str, db: Session = Depends(get_db), user=Dep
         "results": results
     }
     
-    print(f"[DEBUG] Returning session results: {len(results)} results")
+    # print(f"[DEBUG] Returning session results: {len(results)} results")
     return response_data

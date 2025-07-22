@@ -198,7 +198,7 @@ def _process_image_file(file_path, filename, file_bytes, file_extension):
     base64_url = f"data:{mime_type};base64,{b64_image}"
     
     # Debug size
-    print(f"[DEBUG] Base64 image payload size: {len(base64_url)} characters")
+    # print(f"[DEBUG] Base64 image payload size: {len(base64_url)} characters")
 
     # Ensure payload isn't too big (roughly < 20MB)
     if len(base64_url) > 20_000_000:
@@ -278,26 +278,56 @@ IMPORTANT: If you cannot process this image, return this exact JSON structure:
 def _process_pdf_file(file_path, filename, file_bytes):
     """Process PDF files using universal LLM file upload API."""
     try:
-        print(f"[DEBUG] Attempting to process PDF using file upload API: {filename}")
+        # print(f"[DEBUG] Attempting to process PDF using file upload API: {filename}")
         file_id = llm_client.file_upload(file_path, purpose="assistants")
+
+        # Enhanced system prompt for PDF processing
+        pdf_system_prompt = SYSTEM_PROMPT + """
+
+PDF-SPECIFIC INSTRUCTIONS:
+- You are analyzing a BANK STATEMENT PDF file. Extract ALL financial data from the document.
+- Look for account details, transaction lists, balances, and any financial information.
+- If the PDF contains multiple pages, analyze ALL pages.
+- If the PDF appears to be empty or unreadable, respond with a JSON structure containing error information.
+- Focus on identifying: account numbers, transaction dates, amounts, descriptions, and balances.
+- Pay attention to table structures, lists, and any organized financial data.
+- Do not skip any visible transaction or financial information.
+
+IMPORTANT: If you cannot process this PDF or find no readable content, return this exact JSON structure:
+{
+  "error": "Unable to process PDF",
+  "suggestion": "Please upload a different file format or ensure the PDF contains readable text",
+  "Account_Name": "",
+  "Account_Number": "",
+  "Bank_Name": "",
+  "IFSC_Code": "",
+  "Total_Transactions": 0,
+  "categorized_transactions": {},
+  "alerts": [],
+  "insights": {"recommendations": []}
+}
+"""
 
         response = llm_client.chat_completion(
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": pdf_system_prompt},
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Analyze the attached bank statement PDF and extract the required information."},
+                        {"type": "text", "text": "Carefully analyze this bank statement PDF. Extract ALL visible financial data including account details, transactions, amounts, dates, and descriptions. Return ONLY valid JSON in the specified format."},
                         {"type": "file", "file": {"file_id": file_id}}
                     ]
                 }
             ]
         )
         
+        # Debug: Print the actual response content
+        print(f"[DEBUG] PDF Response content: {response.choices[0].message.content[:500]}...")
+        
         return _parse_response(response.choices[0].message.content)
     except Exception as e:
-        print(f"[DEBUG] PDF file upload processing failed: {str(e)}")
-        print(f"[DEBUG] Attempting fallback to text extraction for PDF: {filename}")
+        # print(f"[DEBUG] PDF file upload processing failed: {str(e)}")
+        # print(f"[DEBUG] Attempting fallback to text extraction for PDF: {filename}")
         
         # If file upload fails, just raise the original error
         raise ValueError(f"PDF processing failed: {str(e)}. Please try uploading a different file format or ensure the PDF contains readable text.")
@@ -354,7 +384,7 @@ def _process_excel_file(file_path, filename, file_bytes):
         
         return _parse_response(response.choices[0].message.content)
     except Exception as e:
-        print(f"[DEBUG] Excel processing failed: {str(e)}")
+        # print(f"[DEBUG] Excel processing failed: {str(e)}")
         # Fallback to text extraction if file upload fails
         return _process_text_file(file_path, filename, '.txt')
 
@@ -371,13 +401,13 @@ def _parse_response(content):
 
     content = content.strip()
 
-    print(f"[DEBUG] Cleaned JSON content: {content[:200]}...")
+    # print(f"[DEBUG] Cleaned JSON content: {content[:200]}...")
 
     try:
         return json.loads(content)
     except json.JSONDecodeError as e:
-        print(f"[DEBUG] JSON parsing error: {e}")
-        print(f"[DEBUG] Full content: {content}")
+        # print(f"[DEBUG] JSON parsing error: {e}")
+        # print(f"[DEBUG] Full content: {content}")
         
         # Try to fix common JSON issues
         try:
@@ -393,7 +423,8 @@ def _parse_response(content):
             # Try parsing again
             return json.loads(content)
         except (json.JSONDecodeError, Exception) as fix_error:
-            print(f"[DEBUG] JSON fix attempt failed: {fix_error}")
+            # print(f"[DEBUG] JSON fix attempt failed: {fix_error}")
+            pass
         
         # Check if it's a content policy rejection or processing issue
         content_lower = content.lower()
@@ -420,8 +451,12 @@ def _parse_response(content):
            ("cannot process" in content_lower and "bank" in content_lower) or \
            ("unable to view or analyze images" in content_lower and "financial documents" in content_lower) or \
            ("unable to view" in content_lower and "images" in content_lower) or \
-           ("unable to help" in content_lower and "extracting data" in content_lower):
-            raise ValueError("The AI model was unable to process this file. This could be due to image quality, file format issues, or content complexity. Please try uploading a clearer image, a different file format, or ensure the document contains readable transaction data.")
+           ("unable to help" in content_lower and "extracting data" in content_lower) or \
+           ("unable to process" in content_lower and "pdf" in content_lower) or \
+           ("cannot read" in content_lower and "pdf" in content_lower):
+            raise ValueError("The AI model was unable to process this file. This could be due to file format issues, content complexity, or the document not containing readable transaction data. Please try uploading a different file format (CSV, Excel, clear images) or ensure the document contains readable transaction data.")
         
-        raise ValueError("The model did not return a valid JSON. Raw output:\n" + content)
+        # If we get here, the AI returned some text but not JSON
+        print(f"[DEBUG] AI returned non-JSON content: {content[:200]}...")
+        raise ValueError("The AI model returned a text response instead of the expected JSON format. This usually means the document could not be processed. Please try uploading a different file format or ensure the document contains readable transaction data.")
 

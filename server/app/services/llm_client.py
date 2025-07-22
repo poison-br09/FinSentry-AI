@@ -151,9 +151,9 @@ class LLMClient:
     ) -> Dict[str, Any]:
         """OpenAI-compatible chat completion"""
         try:
-            print(f"[DEBUG] LLM Client - Provider: {self.provider}, Model: {self.model}")
-            print(f"[DEBUG] LLM Client - API Key: {self.api_key[:20]}..." if self.api_key else "[DEBUG] LLM Client - No API Key!")
-            print(f"[DEBUG] LLM Client - Base URL: {self.base_url}")
+            # print(f"[DEBUG] LLM Client - Provider: {self.provider}, Model: {self.model}")
+            # print(f"[DEBUG] LLM Client - API Key: {self.api_key[:20]}..." if self.api_key else "[DEBUG] LLM Client - No API Key!")
+            # print(f"[DEBUG] LLM Client - Base URL: {self.base_url}")
             
             # Use the new OpenAI API syntax with timeout
             client = openai.OpenAI(
@@ -162,8 +162,8 @@ class LLMClient:
                 timeout=self.config.get("timeout", 120)
             )
             
-            print(f"[DEBUG] Sending request to OpenAI with model: {self.model}")
-            print(f"[DEBUG] Messages: {messages}")
+            # print(f"[DEBUG] Sending request to OpenAI with model: {self.model}")
+            # print(f"[DEBUG] Messages: {messages}")
             response = client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -171,7 +171,7 @@ class LLMClient:
                 temperature=temperature or self.config["temperature"],
                 **kwargs
             )
-            print(f"[DEBUG] OpenAI response received successfully")
+            # print(f"[DEBUG] OpenAI response received successfully")
             return response
         except Exception as e:
             error_str = str(e).lower()
@@ -250,21 +250,21 @@ class LLMClient:
             )
         
         try:
-            print(f"[DEBUG] Vision completion - Provider: {self.provider}, Model: {self.model}")
-            print(f"[DEBUG] Vision messages structure: {len(messages)} messages")
+            # print(f"[DEBUG] Vision completion - Provider: {self.provider}, Model: {self.model}")
+            # print(f"[DEBUG] Vision messages structure: {len(messages)} messages")
             
             # Log message content without the large base64 image
-            for i, msg in enumerate(messages):
-                if msg.get("role") == "user" and isinstance(msg.get("content"), list):
-                    content_summary = []
-                    for item in msg["content"]:
-                        if item.get("type") == "text":
-                            content_summary.append(f"text: {item['text'][:100]}...")
-                        elif item.get("type") == "image_url":
-                            content_summary.append("image_url: [base64 data]")
-                    print(f"[DEBUG] Message {i} content: {content_summary}")
-                else:
-                    print(f"[DEBUG] Message {i}: {msg.get('role', 'unknown')} - {str(msg.get('content', ''))[:100]}...")
+            # for i, msg in enumerate(messages):
+            #     if msg.get("role") == "user" and isinstance(msg.get("content"), list):
+            #         content_summary = []
+            #         for item in msg["content"]:
+            #             if item.get("type") == "text":
+            #                 content_summary.append(f"text: {item['text'][:100]}...")
+            #             elif item.get("type") == "image_url":
+            #                 content_summary.append("image_url: [base64 data]")
+            #         print(f"[DEBUG] Message {i} content: {content_summary}")
+            #     else:
+            #         print(f"[DEBUG] Message {i}: {msg.get('role', 'unknown')} - {str(msg.get('content', ''))[:100]}...")
             
             # Use the new OpenAI API syntax with timeout
             client = openai.OpenAI(
@@ -279,9 +279,9 @@ class LLMClient:
                 temperature=temperature or self.config["temperature"],
                 **kwargs
             )
-            print(f"[DEBUG] Vision response received successfully")
-            print(f"[DEBUG] Response content length: {len(response.choices[0].message.content)}")
-            print(f"[DEBUG] Response content preview: {response.choices[0].message.content[:200]}...")
+            # print(f"[DEBUG] Vision response received successfully")
+            # print(f"[DEBUG] Response content length: {len(response.choices[0].message.content)}")
+            # print(f"[DEBUG] Response content preview: {response.choices[0].message.content[:200]}...")
             return response
         except Exception as e:
             logger.error(f"Vision API error: {str(e)}")
@@ -300,7 +300,7 @@ class LLMClient:
             )
         
         try:
-            print(f"[DEBUG] Uploading file: {file_path}")
+            # print(f"[DEBUG] Uploading file: {file_path}")
             # Use the new OpenAI API syntax with timeout
             client = openai.OpenAI(
                 api_key=self.api_key, 
@@ -312,7 +312,7 @@ class LLMClient:
                     file=file,
                     purpose="assistants"
                 )
-            print(f"[DEBUG] File uploaded successfully, ID: {response.id}")
+            # print(f"[DEBUG] File uploaded successfully, ID: {response.id}")
             return response.id
         except Exception as e:
             logger.error(f"File upload error: {str(e)}")

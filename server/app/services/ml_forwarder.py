@@ -11,10 +11,10 @@ import json
 
 def trigger_ml_processing(file_id: str, filename: str, session_id: str, user_id: str, file_path: str):
     print(f"🚀 Starting ML processing for file: {filename}")
-    print(f"   File ID: {file_id}")
-    print(f"   Session ID: {session_id}")
-    print(f"   User ID: {user_id}")
-    print(f"   File path: {file_path}")
+    # print(f"   File ID: {file_id}")
+    # print(f"   Session ID: {session_id}")
+    # print(f"   User ID: {user_id}")
+    # print(f"   File path: {file_path}")
     
     try:
         # Use local file path instead of downloading from URL
@@ -23,7 +23,7 @@ def trigger_ml_processing(file_id: str, filename: str, session_id: str, user_id:
         result_json = json.dumps(result)
         
         print(f"✅ {settings.LLM_PROVIDER.upper()} processing completed for {filename}")
-        print(f"   Result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
+        # print(f"   Result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
 
         db: Session = SessionLocal()
         processed = ProcessedStatement(
@@ -38,8 +38,8 @@ def trigger_ml_processing(file_id: str, filename: str, session_id: str, user_id:
         db.close()
 
         print(f"✅ LLM result stored in database for {filename}")
-        print(f"   Session ID: {session_id}")
-        print(f"   File ID: {file_id}")
+        # print(f"   Session ID: {session_id}")
+        # print(f"   File ID: {file_id}")
         
     except Exception as e:
         print(f"❌ Failed to process file {filename}: {str(e)}")
