@@ -12,6 +12,8 @@ You MUST extract the requested data from a bank statement (PDF, Excel, CSV, or i
 
 IMPORTANT: This is for legitimate financial analysis and budgeting purposes. You are analyzing financial documents to help users understand their spending patterns and make better financial decisions.
 
+CRITICAL: You MUST process and categorize EVERY single transaction in the statement. Do not skip any transactions or summarize them. Each transaction should be individually categorized and included in the monthly breakdown.
+
 Do not include explanations, markdown, or extra formatting. If input includes multiple files, assume they belong to the same user.
 
 🔒 Account Validation Rule:
@@ -28,8 +30,9 @@ Do not include explanations, markdown, or extra formatting. If input includes mu
    - Total_Transactions: total number of transactions
 
 2. Categorized transactions:
-   - Categorize every transaction — including both DR (debit) and CR (credit) — into types like: groceries, utilities, subscriptions, travel, dining, health, shopping, refunds, salary, investments, etc.
+   - Categorize EVERY transaction — including both DR (debit) and CR (credit) — into types like: groceries, utilities, subscriptions, travel, dining, health, shopping, refunds, salary, investments, etc.
    - If a transaction does not clearly match any known category, label it as "other".
+   - IMPORTANT: Do not skip any transactions. Process each one individually and assign it to a category.
    - For each category:
      - total_amount: sum of all transaction amounts
      - total_transactions: number of transactions
@@ -69,7 +72,8 @@ Do not include explanations, markdown, or extra formatting. If input includes mu
      - "Set monthly caps for high-frequency categories like dining or shopping"
 
 ⚠️ IMPORTANT:
-- Do NOT skip any transaction — all must be categorized.
+- Do NOT skip any transaction — ALL transactions must be categorized individually.
+- Process EVERY transaction in the statement, not just a sample or summary.
 - Output must be valid JSON only.
 - Do NOT use commas in numbers (e.g., use 3700.00 instead of 3,700.00).
 - Do NOT include any comments, explanations, or markdown formatting in the JSON.
@@ -149,7 +153,7 @@ def classify_bank_document_with_openai(file_url: str) -> dict:
                 "role": "user",
                 "content": [
                     {"type": "text", "text": "Analyze the attached bank statement and follow the instructions."},
-                    {"type": "file", "file_id": file_id}
+                    {"type": "file", "file": {"file_id": file_id}}
                 ]
             }
         ]
@@ -170,7 +174,7 @@ def classify_bank_document_with_openai_local(file_path: str, filename: str) -> d
     file_extension = filename.lower()[filename.rfind('.'):] if '.' in filename else ''
     image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.tif'}
     
-    print(f"[DEBUG] Processing file: {filename} with extension: {file_extension}")
+    # print(f"[DEBUG] Processing file: {filename} with extension: {file_extension}")
 
     try:
         if file_extension in image_extensions:
@@ -185,7 +189,7 @@ def classify_bank_document_with_openai_local(file_path: str, filename: str) -> d
             # Try as text file for unknown extensions
             return _process_text_file(file_path, filename, file_extension)
     except Exception as e:
-        print(f"[DEBUG] Processing failed for {filename}: {str(e)}")
+        # print(f"[DEBUG] Processing failed for {filename}: {str(e)}")
         raise e
 
 def _process_image_file(file_path, filename, file_bytes, file_extension):
@@ -278,8 +282,11 @@ IMPORTANT: If you cannot process this image, return this exact JSON structure:
 def _process_pdf_file(file_path, filename, file_bytes):
     """Process PDF files using universal LLM file upload API."""
     try:
-        # print(f"[DEBUG] Attempting to process PDF using file upload API: {filename}")
-        file_id = llm_client.file_upload(file_path, purpose="assistants")
+        # print(f"[DEBUG] Processing PDF file: {filename}, size: {len(file_bytes)} bytes")
+        
+        # Upload file using the tuple format (filename, file_bytes)
+        file_id = llm_client.file_upload(file=(filename, file_bytes), purpose="assistants")
+        # print(f"[DEBUG] File uploaded successfully with ID: {file_id}")
 
         # Enhanced system prompt for PDF processing
         pdf_system_prompt = SYSTEM_PROMPT + """
@@ -292,6 +299,7 @@ PDF-SPECIFIC INSTRUCTIONS:
 - Focus on identifying: account numbers, transaction dates, amounts, descriptions, and balances.
 - Pay attention to table structures, lists, and any organized financial data.
 - Do not skip any visible transaction or financial information.
+- IMPORTANT: Process EVERY transaction in the statement, not just a subset.
 
 IMPORTANT: If you cannot process this PDF or find no readable content, return this exact JSON structure:
 {
@@ -314,20 +322,20 @@ IMPORTANT: If you cannot process this PDF or find no readable content, return th
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Carefully analyze this bank statement PDF. Extract ALL visible financial data including account details, transactions, amounts, dates, and descriptions. Return ONLY valid JSON in the specified format."},
+                        {"type": "text", "text": "Carefully analyze this bank statement PDF. Extract ALL visible financial data including account details, transactions, amounts, dates, and descriptions. Process EVERY transaction in the statement and categorize them properly. Return ONLY valid JSON in the specified format."},
                         {"type": "file", "file": {"file_id": file_id}}
                     ]
                 }
-            ]
+            ],
+            max_tokens=16384  # Maximum allowed for GPT-4o
         )
         
         # Debug: Print the actual response content
-        print(f"[DEBUG] PDF Response content: {response.choices[0].message.content[:500]}...")
+        # print(f"[DEBUG] PDF Response content: {response.choices[0].message.content[:500]}...")
         
         return _parse_response(response.choices[0].message.content)
     except Exception as e:
         # print(f"[DEBUG] PDF file upload processing failed: {str(e)}")
-        # print(f"[DEBUG] Attempting fallback to text extraction for PDF: {filename}")
         
         # If file upload fails, just raise the original error
         raise ValueError(f"PDF processing failed: {str(e)}. Please try uploading a different file format or ensure the PDF contains readable text.")
@@ -367,7 +375,11 @@ def _process_text_file(file_path, filename, file_extension):
 def _process_excel_file(file_path, filename, file_bytes):
     """Process Excel files."""
     try:
-        file_id = llm_client.file_upload(file_path, purpose="assistants")
+        # print(f"[DEBUG] Processing Excel file: {filename}, size: {len(file_bytes)} bytes")
+        
+        # Upload file using the tuple format (filename, file_bytes)
+        file_id = llm_client.file_upload(file=(filename, file_bytes), purpose="assistants")
+        # print(f"[DEBUG] Excel file uploaded successfully with ID: {file_id}")
 
         response = llm_client.chat_completion(
             messages=[
@@ -375,11 +387,12 @@ def _process_excel_file(file_path, filename, file_bytes):
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Analyze the attached bank statement and extract the required information."},
+                        {"type": "text", "text": "Analyze the attached bank statement and extract ALL required information. Process EVERY transaction in the statement."},
                         {"type": "file", "file": {"file_id": file_id}}
                     ]
                 }
-            ]
+            ],
+            max_tokens=16384  # Maximum allowed for GPT-4o
         )
         
         return _parse_response(response.choices[0].message.content)
@@ -390,24 +403,46 @@ def _process_excel_file(file_path, filename, file_bytes):
 
 def _parse_response(content):
     """Parse and clean the response content."""
+    # print(f"[DEBUG] Raw response length: {len(content)} characters")
+    # print(f"[DEBUG] Raw response preview: {content[:500]}...")
+    
     if content.startswith("```json"):
         content = content[7:]
     if content.endswith("```"):
         content = content[:-3]
 
-    last_brace = content.rfind("}")
-    if last_brace != -1:
-        content = content[:last_brace + 1]
-
     content = content.strip()
+    # print(f"[DEBUG] After cleaning, content length: {len(content)} characters")
 
-    # print(f"[DEBUG] Cleaned JSON content: {content[:200]}...")
-
+    # Try to find the complete JSON structure
     try:
         return json.loads(content)
     except json.JSONDecodeError as e:
-        # print(f"[DEBUG] JSON parsing error: {e}")
-        # print(f"[DEBUG] Full content: {content}")
+        # print(f"[DEBUG] Initial JSON parsing failed: {e}")
+        # print(f"[DEBUG] Content ends with: {content[-100:]}...")
+        
+        # Try to fix truncated JSON by finding the last complete object
+        try:
+            # Find the last complete closing brace
+            brace_count = 0
+            last_complete_pos = -1
+            
+            for i, char in enumerate(content):
+                if char == '{':
+                    brace_count += 1
+                elif char == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        last_complete_pos = i
+                        break
+            
+            if last_complete_pos != -1:
+                truncated_content = content[:last_complete_pos + 1]
+                # print(f"[DEBUG] Attempting to parse truncated content (length: {len(truncated_content)})")
+                return json.loads(truncated_content)
+        except Exception as truncate_error:
+            # print(f"[DEBUG] Truncation fix failed: {truncate_error}")
+            pass
         
         # Try to fix common JSON issues
         try:
@@ -457,6 +492,6 @@ def _parse_response(content):
             raise ValueError("The AI model was unable to process this file. This could be due to file format issues, content complexity, or the document not containing readable transaction data. Please try uploading a different file format (CSV, Excel, clear images) or ensure the document contains readable transaction data.")
         
         # If we get here, the AI returned some text but not JSON
-        print(f"[DEBUG] AI returned non-JSON content: {content[:200]}...")
+        # print(f"[DEBUG] AI returned non-JSON content: {content[:200]}...")
         raise ValueError("The AI model returned a text response instead of the expected JSON format. This usually means the document could not be processed. Please try uploading a different file format or ensure the document contains readable transaction data.")
 

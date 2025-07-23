@@ -60,10 +60,10 @@ const Dashboard = () => {
     }
   };
 
-  // Poll for results
+  // Poll for results with optimized polling strategy
   const startPollingForResults = (sessionId) => {
     let attempts = 0;
-    const maxAttempts = 60; // 5 minutes max (60 * 5 seconds)
+    const maxAttempts = 20; // Reduced to 20 attempts (about 3.3 minutes)
     
     const poll = async () => {
       attempts++;
@@ -80,7 +80,7 @@ const Dashboard = () => {
           setIsProcessing(false);
           setShowSuccess(true);
           if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
+            clearTimeout(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
           }
           // Hide success message after 5 seconds
@@ -90,14 +90,17 @@ const Dashboard = () => {
         
         // If no result yet and we haven't exceeded max attempts, continue polling
         if (attempts < maxAttempts) {
-          pollingIntervalRef.current = setTimeout(poll, 5000); // Poll every 5 seconds
+          // Progressive polling: start with 10s, then increase to 15s after 5 attempts
+          const pollInterval = attempts > 5 ? 15000 : 10000;
+          pollingIntervalRef.current = setTimeout(poll, pollInterval);
         } else {
           setError("Processing timeout. Please try again.");
           setIsProcessing(false);
         }
       } catch (err) {
         if (attempts < maxAttempts) {
-          pollingIntervalRef.current = setTimeout(poll, 5000);
+          // On error, wait longer before retrying
+          pollingIntervalRef.current = setTimeout(poll, 15000);
         } else {
           setError("Failed to fetch result: " + err.message);
           setIsProcessing(false);
@@ -105,8 +108,8 @@ const Dashboard = () => {
       }
     };
     
-    // Start polling after 2 seconds
-    pollingIntervalRef.current = setTimeout(poll, 2000);
+    // Start polling after 8 seconds to give more time for initial processing
+    pollingIntervalRef.current = setTimeout(poll, 8000);
   };
 
   // Fetch result for uploaded session (manual fetch if needed)
@@ -163,6 +166,16 @@ const Dashboard = () => {
       pollingIntervalRef.current = null;
     }
   }, [files]);
+
+  // Cleanup polling on component unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearTimeout(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   // Handle currency change
   const handleCurrencyChange = (currency) => {

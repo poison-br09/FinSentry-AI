@@ -52,41 +52,41 @@ class LLMClient:
         """Validate if the current model supports the requested feature"""
         model = self.model.lower()
         
-        print(f"[DEBUG] Validating model compatibility - Model: {model}, Feature: {feature}")
+        # print(f"[DEBUG] Validating model compatibility - Model: {model}, Feature: {feature}")
         
         # Vision support
         if feature == "vision":
             if self.provider == "openai":
                 vision_supported = any(vision_model in model for vision_model in ["gpt-4o", "gpt-4-vision"])
-                print(f"[DEBUG] OpenAI vision support: {vision_supported}")
+                # print(f"[DEBUG] OpenAI vision support: {vision_supported}")
                 return vision_supported
             elif self.provider == "krutrim":
                 vision_supported = "vision" in model or "pro" in model
-                print(f"[DEBUG] Krutrim vision support: {vision_supported}")
+                # print(f"[DEBUG] Krutrim vision support: {vision_supported}")
                 return vision_supported
             elif self.provider == "anthropic":
                 vision_supported = "opus" in model or "sonnet" in model
-                print(f"[DEBUG] Anthropic vision support: {vision_supported}")
+                # print(f"[DEBUG] Anthropic vision support: {vision_supported}")
                 return vision_supported
             else:
-                print(f"[DEBUG] Unknown provider for vision: {self.provider}")
+                # print(f"[DEBUG] Unknown provider for vision: {self.provider}")
                 return False
         
         # File upload support
         elif feature == "file_upload":
             if self.provider in ["openai", "krutrim"]:
-                print(f"[DEBUG] File upload supported for {self.provider}")
+                # print(f"[DEBUG] File upload supported for {self.provider}")
                 return True
             else:
-                print(f"[DEBUG] File upload not supported for {self.provider}")
+                # print(f"[DEBUG] File upload not supported for {self.provider}")
                 return False
         
         # Chat support (all models support this)
         elif feature == "chat":
-            print(f"[DEBUG] Chat supported for all models")
+            # print(f"[DEBUG] Chat supported for all models")
             return True
         
-        print(f"[DEBUG] Unknown feature: {feature}")
+        # print(f"[DEBUG] Unknown feature: {feature}")
         return False
     
     def get_recommended_model(self, provider: str, feature: str = "chat") -> str:
@@ -287,9 +287,10 @@ class LLMClient:
             logger.error(f"Vision API error: {str(e)}")
             raise
     
-    def file_upload(self, file_path: str, purpose: str = "assistants") -> str:
+    def file_upload(self, file, purpose: str = "assistants") -> str:
         """
         Upload file for analysis (OpenAI/Krutrim compatible)
+        Supports both file path (str) and file tuple (filename, file_bytes)
         """
         # Validate file upload support
         if not self.validate_model_compatibility("file_upload"):
@@ -300,18 +301,36 @@ class LLMClient:
             )
         
         try:
-            # print(f"[DEBUG] Uploading file: {file_path}")
             # Use the new OpenAI API syntax with timeout
             client = openai.OpenAI(
                 api_key=self.api_key, 
                 base_url=self.base_url,
                 timeout=self.config.get("timeout", 120)
             )
-            with open(file_path, 'rb') as file:
+            
+            # Handle different file input formats
+            if isinstance(file, str):
+                # file is a file path
+                # print(f"[DEBUG] Uploading file from path: {file}")
+                with open(file, 'rb') as f:
+                    response = client.files.create(
+                        file=f,
+                        purpose="assistants"
+                    )
+            elif isinstance(file, tuple) and len(file) == 2:
+                # file is a tuple (filename, file_bytes)
+                filename, file_bytes = file
+                # print(f"[DEBUG] Uploading file from bytes: {filename}, {len(file_bytes)} bytes")
+                import io
+                file_obj = io.BytesIO(file_bytes)
+                file_obj.name = filename
                 response = client.files.create(
-                    file=file,
+                    file=file_obj,
                     purpose="assistants"
                 )
+            else:
+                raise ValueError(f"Invalid file format. Expected string (file path) or tuple (filename, bytes), got {type(file)}")
+                
             # print(f"[DEBUG] File uploaded successfully, ID: {response.id}")
             return response.id
         except Exception as e:
