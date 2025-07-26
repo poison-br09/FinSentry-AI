@@ -22,6 +22,9 @@ const Header = () => {
           className="max-h-12 w-auto object-contain" 
           style={{maxWidth: '100%'}} 
         />
+        <div className="ml-12 text-xl font-semibold text-gray-700">
+          FinSentry AI
+        </div>
       </div>
       <div className="flex items-center space-x-4">
         {/* Toggle Button */}
